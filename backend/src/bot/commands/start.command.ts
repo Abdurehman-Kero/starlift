@@ -132,7 +132,8 @@ async function renderStartScreen(ctx: Context) {
       : '<i>Tap "Get Invite Link" below to generate your link</i>';
 
     const shareText = encodeURIComponent(
-      'Join @NilePixelTech to support my project in the NilePixel StarLift Challenge!'
+      `Support my project "${subTitle}" in the NilePixel StarLift Challenge!\n\n` +
+        `Join @NilePixelTech using my invite link:\n${inviteLink || ''}`
     );
     const shareUrl = inviteLink
       ? `https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=${shareText}`
@@ -148,7 +149,7 @@ async function renderStartScreen(ctx: Context) {
       `• <b>Members Joined:</b> ${referralCount} members\n\n` +
       `<b>Your Channel Invite Link:</b>\n` +
       `${linkText}\n\n` +
-      `Share your personal invite link with friends and communities to invite more members to @NilePixelTech.`;
+      `Share your personal invite link with your community, developer channels, and friends to invite more supporters to @NilePixelTech. When your project is published, get them to react to your post as well!`;
 
     const keyboardButtons = [];
     if (submission.channelPostUrl) {
@@ -156,7 +157,7 @@ async function renderStartScreen(ctx: Context) {
     }
     keyboardButtons.push([
       ...(inviteLink
-        ? [Markup.button.url('Share Invite Link', shareUrl)]
+        ? [Markup.button.url('Share with Community', shareUrl)]
         : [Markup.button.callback('Get Invite Link', 'cmd_mylink')]),
       Markup.button.callback('My Stats', 'cmd_stats'),
     ]);

@@ -105,7 +105,8 @@ async function finalizeSubmission(
     : `• <b>Banner Image:</b> Not attached (you can send a photo anytime to attach one)\n`;
 
   const shareText = encodeURIComponent(
-    'Join @NilePixelTech to support my project in the NilePixel StarLift Challenge!'
+    `Support my project "${submission.projectTitle || 'StarLift Project'}" in the NilePixel StarLift Challenge!\n\n` +
+      `Join @NilePixelTech using my invite link:\n${inviteLink || ''}`
   );
   const shareUrl = inviteLink
     ? `https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=${shareText}`
@@ -121,16 +122,18 @@ async function finalizeSubmission(
       `<b>Your Channel Invite Link is Ready:</b>\n` +
       `${linkText}\n\n` +
       `• <b>Referral Code:</b> <code>${escapeHtml(referralCode)}</code>\n\n` +
-      `<b>What to do next:</b>\n\n` +
-      `1. <b>Share your personal invite link:</b>\n` +
-      `Send your invite link to friends, colleagues, and developer groups. Every person who joins @NilePixelTech through your link is counted directly to your profile.\n\n` +
-      `2. <b>Showcase publication:</b>\n` +
-      `Once published on @NilePixelTech, share your post and ask supporters to react to it.\n\n` +
-      `3. <b>Check your statistics:</b>\n` +
-      `Tap <b>My Stats</b> below anytime to track your confirmed referrals in real time.`,
+      `<b>Recommended Immediate Actions to Win:</b>\n\n` +
+      `1. <b>Share with your community:</b>\n` +
+      `Share your personal invite link in your developer channels, tech groups, and with any community that supports your work.\n\n` +
+      `2. <b>Get community members to join:</b>\n` +
+      `Every member who joins @NilePixelTech through your invite link is credited directly to you, boosting your score to win the challenge.\n\n` +
+      `3. <b>Rally reactions once live:</b>\n` +
+      `As soon as your showcase post is published on the channel, ask your community to react with emojis to your post.\n\n` +
+      `4. <b>Track your stats:</b>\n` +
+      `Tap <b>My Stats</b> below anytime to check your confirmed joins in real time.`,
     Markup.inlineKeyboard([
       [
-        ...(inviteLink ? [Markup.button.url('Share Invite Link', shareUrl)] : []),
+        ...(inviteLink ? [Markup.button.url('Share with Community', shareUrl)] : []),
         Markup.button.callback('My Stats', 'cmd_stats'),
       ],
       [

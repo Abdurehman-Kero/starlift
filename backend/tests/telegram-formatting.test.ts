@@ -51,21 +51,21 @@ describe('Telegram Formatting & Deep Link Parsing', () => {
       `<code>${inviteLink}</code>\n\n` +
       `• <b>Referral Code:</b> <code>${referralCode}</code>\n\n` +
       `━━━━━━━━━━━━━━━━━━━━━━\n` +
-      `<b>What to do next:</b>\n\n` +
-      `1. <b>Share your personal invite link:</b>\n` +
-      `Send your invite link to friends, colleagues, and developer groups. Every person who joins @NilePixelTech through your link is counted as your confirmed referral.\n\n` +
-      `2. <b>Share your showcase post:</b>\n` +
-      `Forward your showcase post from @NilePixelTech and ask supporters to react to it.\n\n` +
-      `3. <b>Track your results:</b>\n` +
-      `Check how many people have joined through your link anytime with /stats!`;
+      `<b>Recommended Immediate Actions to Win the Challenge:</b>\n\n` +
+      `1. <b>Mobilize your community:</b>\n` +
+      `Share your personal invite link across your developer channels, tech groups, social media, and with any community that supports your work.\n\n` +
+      `2. <b>Get them to join and react:</b>\n` +
+      `Ask your community members to join @NilePixelTech using your invite link AND react with emojis to your showcase post. Both community joins and post reactions give you points to win the challenge!\n\n` +
+      `3. <b>Track your results in real time:</b>\n` +
+      `Check your confirmed referral joins anytime by tapping <b>My Stats</b> below or sending /stats.`;
 
     expect(dmText).toContain(`Congratulations, ${contestantName}!`);
     expect(dmText).toContain(`• <b>Showcase Post Link:</b>\n<a href="${postUrl}">${postUrl}</a>`);
     expect(dmText).toContain(`• <b>Your Personal Invite Link:</b>\n<code>${inviteLink}</code>`);
     expect(dmText).toContain(`• <b>Referral Code:</b> <code>${referralCode}</code>`);
-    expect(dmText).toContain('What to do next:');
-    expect(dmText).toContain('1. <b>Share your personal invite link:</b>');
-    expect(dmText).toContain('2. <b>Share your showcase post:</b>');
-    expect(dmText).toContain('3. <b>Track your results:</b>');
+    expect(dmText).toContain('Recommended Immediate Actions to Win the Challenge:');
+    expect(dmText).toContain('1. <b>Mobilize your community:</b>');
+    expect(dmText).toContain('2. <b>Get them to join and react:</b>');
+    expect(dmText).toContain('3. <b>Track your results in real time:</b>');
   });
 });

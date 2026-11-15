@@ -197,12 +197,15 @@ export async function publishShowcaseToChannel(submissionId: number, adminEmail?
 
   // Notify contestant via private DM from bot
   try {
-    const shareText = encodeURIComponent(
-      `Support my project "${submission.projectTitle || 'StarLift Showcase'}" in the NilePixel StarLift Challenge!`
-    );
+    const rawShareMessage =
+      `Support my project "${submission.projectTitle || 'StarLift Showcase'}" in the NilePixel StarLift Challenge!\n\n` +
+      (inviteLink ? `Join the channel via my invite link:\n${inviteLink}\n\n` : '') +
+      `React to my showcase post on the channel to help me win:\n${postUrl}`;
+
+    const shareText = encodeURIComponent(rawShareMessage);
     const shareUrl = inviteLink
       ? `https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=${shareText}`
-      : postUrl;
+      : `https://t.me/share/url?url=${encodeURIComponent(postUrl)}&text=${shareText}`;
 
     const linkDisplay = inviteLink
       ? `<code>${inviteLink}</code>`
@@ -217,18 +220,18 @@ export async function publishShowcaseToChannel(submissionId: number, adminEmail?
       `${linkDisplay}\n\n` +
       `• <b>Referral Code:</b> <code>${referralCode}</code>\n\n` +
       `━━━━━━━━━━━━━━━━━━━━━━\n` +
-      `<b>What to do next:</b>\n\n` +
-      `1. <b>Share your personal invite link:</b>\n` +
-      `Send your invite link to friends, colleagues, and developer groups. Every person who joins @NilePixelTech through your link is counted as your confirmed referral.\n\n` +
-      `2. <b>Share your showcase post:</b>\n` +
-      `Forward your showcase post from @NilePixelTech and ask supporters to react to it.\n\n` +
-      `3. <b>Track your results:</b>\n` +
-      `Check how many people have joined through your link anytime with /stats!`;
+      `<b>Recommended Immediate Actions to Win the Challenge:</b>\n\n` +
+      `1. <b>Mobilize your community:</b>\n` +
+      `Share your personal invite link across your developer channels, tech groups, social media, and with any community that supports your work.\n\n` +
+      `2. <b>Get them to join and react:</b>\n` +
+      `Ask your community members to join @NilePixelTech using your invite link AND react with emojis to your showcase post. Both community joins and post reactions give you points to win the challenge!\n\n` +
+      `3. <b>Track your results in real time:</b>\n` +
+      `Check your confirmed referral joins anytime by tapping <b>My Stats</b> below or sending /stats.`;
 
     const keyboard = Markup.inlineKeyboard([
       [
         Markup.button.url('View Showcase Post', postUrl),
-        ...(inviteLink ? [Markup.button.url('Share Invite Link', shareUrl)] : []),
+        ...(inviteLink ? [Markup.button.url('Share with Community', shareUrl)] : []),
       ],
       [
         Markup.button.callback('My Stats', 'cmd_stats'),

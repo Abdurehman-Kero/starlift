@@ -36,7 +36,8 @@ async function handleStats(ctx: Context) {
       : '<i>Tap "Get Invite Link" below to generate your link</i>';
 
     const shareText = encodeURIComponent(
-      'Join @NilePixelTech to support my project in the NilePixel StarLift Challenge!'
+      `Support my project in the NilePixel StarLift Challenge!\n\n` +
+        `Join @NilePixelTech using my invite link:\n${inviteLink || ''}`
     );
     const shareUrl = inviteLink
       ? `https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=${shareText}`
@@ -60,13 +61,13 @@ async function handleStats(ctx: Context) {
       `• <b>Members Joined:</b> ${referralCount} members\n\n` +
       `${showcaseLine}\n` +
       `<b>Your Personal Invite Link:</b>\n${linkText}\n\n` +
-      `<b>How to invite more members:</b>\n` +
-      `Share your personal invite link with friends and developer groups. Every verified member who joins @NilePixelTech through your link is counted toward your total.`;
+      `<b>Recommended Immediate Action to Win:</b>\n` +
+      `Share your personal invite link across your community channels, developer groups, and friends. Every member who joins @NilePixelTech through your link is credited to you, and when they react to your published showcase post, your rank climbs even higher!`;
 
     const buttons = [
       [
         ...(inviteLink
-          ? [Markup.button.url('Share Invite Link', shareUrl)]
+          ? [Markup.button.url('Share with Community', shareUrl)]
           : [Markup.button.callback('Get Invite Link', 'cmd_mylink')]),
         Markup.button.callback('Refresh Stats', 'cmd_stats'),
       ],

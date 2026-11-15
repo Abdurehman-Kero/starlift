@@ -37,7 +37,8 @@ async function handleMyLink(ctx: Context) {
 
     const link = escapeHtml(inviteRecord.inviteLink);
     const shareText = encodeURIComponent(
-      'Join @NilePixelTech to support my project in the NilePixel StarLift Challenge!'
+      `Support my project in the NilePixel StarLift Challenge!\n\n` +
+        `Join @NilePixelTech using my invite link:\n${inviteRecord.inviteLink}`
     );
     const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(inviteRecord.inviteLink)}&text=${shareText}`;
 
@@ -45,13 +46,14 @@ async function handleMyLink(ctx: Context) {
       `<b>Your Personal Invitation Link</b>\n\n` +
         `<code>${link}</code>\n\n` +
         `• <b>Referral Code:</b> <code>${escapeHtml(participant.referralCode)}</code>\n\n` +
-        `<b>How It Works:</b>\n` +
-        `• Share this link with friends, colleagues, and developer groups.\n` +
-        `• When someone joins @NilePixelTech through this link, they are credited as your referral.\n` +
+        `<b>Recommended Immediate Action to Win:</b>\n` +
+        `• Share this link with your community, developer channels, and friends who want to support you in the NilePixel StarLift Challenge.\n` +
+        `• Every member who joins @NilePixelTech through your link counts directly toward your score.\n` +
+        `• Once your showcase project is live, ask your community to react to your post as well!\n` +
         `• Track your referrals anytime with /stats.`,
       Markup.inlineKeyboard([
         [Markup.button.url('Open Channel Invite', inviteRecord.inviteLink)],
-        [Markup.button.url('Share with Friends', shareUrl)],
+        [Markup.button.url('Share with Community', shareUrl)],
         [
           Markup.button.callback('View My Stats', 'cmd_stats'),
           Markup.button.callback('Main Menu', 'cmd_start'),
