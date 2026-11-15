@@ -17,6 +17,7 @@ export const DEFAULT_BOT_SHORT_DESCRIPTION =
 
 export const BOT_COMMANDS = [
   { command: 'start', description: '🚀 Register & open main menu' },
+  { command: 'submit', description: '💡 Submit project for channel showcase review' },
   { command: 'mylink', description: '🔗 Get your personal channel invite link' },
   { command: 'stats', description: '📊 Check your referrals, points & rank' },
   { command: 'leaderboard', description: '🏆 View top 10 competition standings' },

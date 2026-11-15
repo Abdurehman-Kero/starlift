@@ -21,6 +21,7 @@ import leaderboardRoutes from './routes/leaderboard.routes';
 import statsRoutes from './routes/stats.routes';
 import settingsRoutes from './routes/settings.routes';
 import activityRoutes from './routes/activity.routes';
+import submissionsRoutes from './routes/submissions.routes';
 
 const app = express();
 
@@ -116,6 +117,7 @@ app.use('/api/leaderboard', requireDatabase, leaderboardRoutes);
 app.use('/api/stats', requireDatabase, statsRoutes);
 app.use('/api/settings', requireDatabase, settingsRoutes);
 app.use('/api/activity', requireDatabase, activityRoutes);
+app.use('/api/submissions', requireDatabase, submissionsRoutes);
 
 // 404 & error handlers (must be after all routes)
 app.use(notFoundHandler);

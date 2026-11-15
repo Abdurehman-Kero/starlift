@@ -76,6 +76,16 @@ export const participantsApi = {
   verifySubmission: (id: number, status: string) => api.patch(`/participants/${id}/verify-submission`, { status }),
 };
 
+// Submissions & Showcase Publishing
+export const submissionsApi = {
+  get: (participantId: number) => api.get(`/submissions/${participantId}`),
+  save: (
+    participantId: number,
+    data: { projectTitle?: string; projectUrl: string; description: string; status?: string }
+  ) => api.post(`/submissions/${participantId}`, data),
+  publish: (submissionId: number) => api.post(`/submissions/${submissionId}/publish`),
+};
+
 // Referrals
 export const referralsApi = {
   list: (params?: { page?: number; limit?: number; referrerId?: number; status?: string }) =>

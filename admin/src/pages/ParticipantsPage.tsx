@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { participantsApi } from '../services/api';
+import { participantsApi, submissionsApi } from '../services/api';
 import {
   Search,
   ChevronLeft,
@@ -12,6 +12,10 @@ import {
   Download,
   Clock,
   ArrowUpRight,
+  Send,
+  Plus,
+  Edit2,
+  Sparkles,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -58,9 +62,13 @@ interface ParticipantDetail extends ParticipantItem {
   } | null;
   projectSubmission: {
     id: number;
+    projectTitle?: string | null;
     projectUrl: string;
     description: string;
     status: string;
+    channelMessageId?: number | null;
+    channelPostUrl?: string | null;
+    publishedAt?: string | null;
     verifiedAt: string | null;
     verifiedBy: string | null;
   } | null;
@@ -105,6 +113,39 @@ export const ParticipantsPage: React.FC = () => {
     },
     onError: () => {
       toast.error('Failed to update submission status.');
+    },
+  });
+
+  const [isEditingSubmission, setIsEditingSubmission] = useState(false);
+  const [subTitle, setSubTitle] = useState('');
+  const [subUrl, setSubUrl] = useState('');
+  const [subDesc, setSubDesc] = useState('');
+
+  const publishMutation = useMutation({
+    mutationFn: (submissionId: number) => submissionsApi.publish(submissionId),
+    onSuccess: (res: any) => {
+      toast.success(res?.data?.message || 'Showcase published to @NilePixelTech and linked to contestant!');
+      queryClient.invalidateQueries({ queryKey: ['participants'] });
+      queryClient.invalidateQueries({ queryKey: ['participant-detail', selectedId] });
+      queryClient.invalidateQueries({ queryKey: ['leaderboard'] });
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || 'Failed to publish showcase to channel.');
+    },
+  });
+
+  const saveSubmissionMutation = useMutation({
+    mutationFn: ({ participantId, data }: { participantId: number; data: any }) =>
+      submissionsApi.save(participantId, data),
+    onSuccess: () => {
+      toast.success('Project submission saved!');
+      setIsEditingSubmission(false);
+      queryClient.invalidateQueries({ queryKey: ['participants'] });
+      queryClient.invalidateQueries({ queryKey: ['participant-detail', selectedId] });
+      queryClient.invalidateQueries({ queryKey: ['leaderboard'] });
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || 'Failed to save submission.');
     },
   });
 
@@ -161,6 +202,14 @@ export const ParticipantsPage: React.FC = () => {
   const getStatusBadge = (status?: string) => {
     if (!status) {
       return <span className="badge-slate text-[11px]">No Submission</span>;
+    }
+    if (status === 'published') {
+      return (
+        <span className="badge-blue text-[11px] font-semibold flex items-center gap-1">
+          <Sparkles size={11} className="text-blue-600" />
+          Published to Channel
+        </span>
+      );
     }
     if (status === 'verified' || status === 'approved') {
       return (
@@ -594,20 +643,130 @@ export const ParticipantsPage: React.FC = () => {
                       )}
                     </div>
 
-                    {/* StarLift Project Submission Section */}
+                    {/* StarLift Project Submission & Showcase Section */}
                     <div className="p-4 rounded-lg border border-slate-200 bg-white shadow-2xs">
                       <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                          Project Submission
-                        </h3>
-                        {getStatusBadge(detail.projectSubmission?.status)}
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                            Showcase Submission
+                          </h3>
+                          {getStatusBadge(detail.projectSubmission?.status)}
+                        </div>
+
+                        {!isEditingSubmission && (
+                          <button
+                            onClick={() => {
+                              setSubTitle(detail.projectSubmission?.projectTitle || '');
+                              setSubUrl(detail.projectSubmission?.projectUrl || '');
+                              setSubDesc(detail.projectSubmission?.description || '');
+                              setIsEditingSubmission(true);
+                            }}
+                            className="btn-base btn-secondary py-1 px-2.5 text-[11px] font-semibold inline-flex items-center gap-1"
+                          >
+                            {detail.projectSubmission ? (
+                              <>
+                                <Edit2 size={11} /> Edit Details
+                              </>
+                            ) : (
+                              <>
+                                <Plus size={11} /> Add Submission
+                              </>
+                            )}
+                          </button>
+                        )}
                       </div>
 
-                      {detail.projectSubmission ? (
+                      {isEditingSubmission ? (
+                        <div className="space-y-3 pt-2 text-xs border-t border-slate-100">
+                          <div>
+                            <label className="text-[11px] font-semibold text-slate-700 block mb-1">
+                              Project Title
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="e.g. NilePay Gateway"
+                              value={subTitle}
+                              onChange={(e) => setSubTitle(e.target.value)}
+                              className="input-base text-xs py-1.5"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-[11px] font-semibold text-slate-700 block mb-1">
+                              Demo / Repository URL *
+                            </label>
+                            <input
+                              type="url"
+                              placeholder="https://myproject.com or https://github.com/..."
+                              value={subUrl}
+                              onChange={(e) => setSubUrl(e.target.value)}
+                              className="input-base text-xs py-1.5 font-mono"
+                              required
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-[11px] font-semibold text-slate-700 block mb-1">
+                              Description / Pitch *
+                            </label>
+                            <textarea
+                              rows={3}
+                              placeholder="Brief pitch highlighting the innovation and solution..."
+                              value={subDesc}
+                              onChange={(e) => setSubDesc(e.target.value)}
+                              className="input-base text-xs py-1.5"
+                              required
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-end gap-2 pt-2">
+                            <button
+                              type="button"
+                              onClick={() => setIsEditingSubmission(false)}
+                              className="btn-base btn-secondary py-1.5 px-3 text-xs"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (!subUrl || !subDesc) {
+                                  toast.error('URL and Description are required.');
+                                  return;
+                                }
+                                saveSubmissionMutation.mutate({
+                                  participantId: detail.id,
+                                  data: {
+                                    projectTitle: subTitle,
+                                    projectUrl: subUrl,
+                                    description: subDesc,
+                                    status: 'verified',
+                                  },
+                                });
+                              }}
+                              disabled={saveSubmissionMutation.isPending}
+                              className="btn-base bg-blue-600 text-white hover:bg-blue-700 py-1.5 px-3 text-xs font-semibold"
+                            >
+                              Save Submission
+                            </button>
+                          </div>
+                        </div>
+                      ) : detail.projectSubmission ? (
                         <div className="space-y-3 text-xs">
+                          {detail.projectSubmission.projectTitle && (
+                            <div>
+                              <span className="text-[11px] text-slate-500 font-medium block">
+                                Project Title:
+                              </span>
+                              <span className="font-bold text-slate-900 text-sm">
+                                {detail.projectSubmission.projectTitle}
+                              </span>
+                            </div>
+                          )}
+
                           <div>
                             <span className="text-[11px] text-slate-500 font-medium block mb-1">
-                              Project URL:
+                              Live Demo / Repo URL:
                             </span>
                             <a
                               href={detail.projectSubmission.projectUrl}
@@ -623,7 +782,7 @@ export const ParticipantsPage: React.FC = () => {
                           {detail.projectSubmission.description && (
                             <div>
                               <span className="text-[11px] text-slate-500 font-medium block mb-1">
-                                Description / Pitch:
+                                Pitch / Description:
                               </span>
                               <div className="p-3 bg-slate-50 rounded-md border border-slate-200/80 text-slate-700 whitespace-pre-wrap leading-relaxed">
                                 {detail.projectSubmission.description}
@@ -631,20 +790,54 @@ export const ParticipantsPage: React.FC = () => {
                             </div>
                           )}
 
-                          {detail.projectSubmission.verifiedBy && (
-                            <div className="pt-2 text-[11px] text-slate-400">
-                              Reviewed by {detail.projectSubmission.verifiedBy} on{' '}
-                              {detail.projectSubmission.verifiedAt
-                                ? format(
-                                    new Date(detail.projectSubmission.verifiedAt),
-                                    'MMM d, yyyy HH:mm'
-                                  )
-                                : '—'}
+                          {/* Live Channel Post Link if Published */}
+                          {detail.projectSubmission.channelPostUrl && (
+                            <div className="p-3 bg-blue-50/80 border border-blue-200 rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
+                              <div>
+                                <span className="text-xs font-bold text-blue-900 flex items-center gap-1.5">
+                                  <Sparkles size={13} className="text-blue-600" />
+                                  Live on Channel (@NilePixelTech)
+                                </span>
+                                <a
+                                  href={detail.projectSubmission.channelPostUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs font-mono text-blue-700 hover:underline flex items-center gap-1 mt-0.5"
+                                >
+                                  {detail.projectSubmission.channelPostUrl}
+                                  <ExternalLink size={11} />
+                                </a>
+                                <span className="text-[10px] text-blue-600 block mt-1">
+                                  ⚡ All channel emoji reactions are automatically synced & scored live
+                                </span>
+                              </div>
+                              <a
+                                href={detail.projectSubmission.channelPostUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn-base bg-blue-600 text-white hover:bg-blue-700 py-1.5 px-3 text-xs shrink-0 self-start sm:self-center"
+                              >
+                                View Post
+                              </a>
                             </div>
                           )}
 
                           {/* Action Buttons for Submission */}
-                          <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                          <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-end gap-2">
+                            {detail.projectSubmission.status !== 'published' && (
+                              <button
+                                onClick={() =>
+                                  publishMutation.mutate(detail.projectSubmission!.id)
+                                }
+                                disabled={publishMutation.isPending}
+                                className="btn-base py-1.5 px-3 text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 shadow-xs flex items-center gap-1.5"
+                              >
+                                <Send size={12} />
+                                {publishMutation.isPending
+                                  ? 'Publishing…'
+                                  : 'Publish Showcase to @NilePixelTech'}
+                              </button>
+                            )}
                             <button
                               onClick={() =>
                                 verifyMutation.mutate({
@@ -658,24 +851,38 @@ export const ParticipantsPage: React.FC = () => {
                               <X size={13} />
                               Reject
                             </button>
-                            <button
-                              onClick={() =>
-                                verifyMutation.mutate({
-                                  id: detail.projectSubmission!.id,
-                                  status: 'verified',
-                                })
-                              }
-                              disabled={verifyMutation.isPending}
-                              className="btn-base py-1.5 px-3 text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700"
-                            >
-                              <Check size={13} />
-                              Approve & Verify
-                            </button>
+                            {detail.projectSubmission.status !== 'verified' &&
+                              detail.projectSubmission.status !== 'published' && (
+                                <button
+                                  onClick={() =>
+                                    verifyMutation.mutate({
+                                      id: detail.projectSubmission!.id,
+                                      status: 'verified',
+                                    })
+                                  }
+                                  disabled={verifyMutation.isPending}
+                                  className="btn-base py-1.5 px-3 text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700"
+                                >
+                                  <Check size={13} />
+                                  Verify
+                                </button>
+                              )}
                           </div>
                         </div>
                       ) : (
-                        <div className="py-4 text-center text-xs text-slate-400">
-                          Participant has not submitted a project for showcase review.
+                        <div className="py-6 text-center text-xs text-slate-400">
+                          <p className="mb-2">No showcase project submitted for this contestant yet.</p>
+                          <button
+                            onClick={() => {
+                              setSubTitle('');
+                              setSubUrl('');
+                              setSubDesc('');
+                              setIsEditingSubmission(true);
+                            }}
+                            className="btn-base btn-secondary py-1.5 px-3 text-xs font-semibold inline-flex items-center gap-1"
+                          >
+                            <Plus size={12} /> Create Project Submission
+                          </button>
                         </div>
                       )}
                     </div>

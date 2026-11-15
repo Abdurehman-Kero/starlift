@@ -7,7 +7,9 @@ import { registerMyLinkCommand } from './commands/mylink.command';
 import { registerStatsCommand } from './commands/stats.command';
 import { registerLeaderboardCommand } from './commands/leaderboard.command';
 import { registerHelpCommand } from './commands/help.command';
+import { registerSubmitCommand } from './commands/submit.command';
 import { registerChatMemberHandler } from './handlers/chatMember.handler';
+import { registerReactionHandler } from './handlers/reaction.handler';
 import { syncBotProfileToTelegram } from '../services/botProfile.service';
 
 export let isBotRunning = false;
@@ -41,7 +43,9 @@ registerMyLinkCommand(bot);
 registerStatsCommand(bot);
 registerLeaderboardCommand(bot);
 registerHelpCommand(bot);
+registerSubmitCommand(bot);
 registerChatMemberHandler(bot);
+registerReactionHandler(bot);
 
 /**
  * Single launch attempt with cleanup. Safe to call multiple times.
@@ -79,7 +83,13 @@ export async function launchBotOnce(): Promise<boolean> {
     // Launch polling in background (bot.launch() returns a promise that resolves only when polling terminates)
     bot
       .launch({
-        allowedUpdates: ['message', 'chat_member', 'callback_query'],
+        allowedUpdates: [
+          'message',
+          'chat_member',
+          'callback_query',
+          'message_reaction_count',
+          'message_reaction',
+        ] as any,
       })
       .then(() => {
         isBotRunning = false;
@@ -125,7 +135,13 @@ export async function startBot(app: Application): Promise<void> {
       const webhookUrl = `${env.BOT_WEBHOOK_URL}${webhookPath}`;
 
       await bot.telegram.setWebhook(webhookUrl, {
-        allowed_updates: ['message', 'chat_member', 'callback_query'],
+        allowed_updates: [
+          'message',
+          'chat_member',
+          'callback_query',
+          'message_reaction_count',
+          'message_reaction',
+        ] as any,
       });
 
       app.use(webhookPath, bot.webhookCallback(webhookPath));
