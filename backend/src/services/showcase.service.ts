@@ -115,7 +115,7 @@ export async function publishShowcaseToChannel(submissionId: number, adminEmail?
     `${description}\n\n` +
     `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
     `${linkActionText}\n\n` +
-    `React with emojis below to support this project!\n\n` +
+    `React to this post to support this project!\n\n` +
     `━━━━━━━━━━━━━━━━━━━━━━\n` +
     `<i>NilePixel StarLift Challenge (Nov 16 – 30, 2026)</i>`;
 
