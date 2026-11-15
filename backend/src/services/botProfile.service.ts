@@ -3,25 +3,23 @@ import logger from '../config/logger';
 import { getSetting } from './settings.service';
 
 export const DEFAULT_BOT_DESCRIPTION =
-  '🌟 NilePixel StarLift Project Showcase\n\n' +
-  'Official tracking bot for the StarLift Challenge (Nov 15 – 30, 2026) by NilePixel Technologies.\n\n' +
-  '🚀 Key Capabilities:\n' +
-  '• 🔗 Generate your personal channel invite link\n' +
-  '• 👥 Track friends joining @NilePixelTech automatically\n' +
-  '• ⚖️ 70/30 Scoring: 70% referrals + 30% project reactions\n' +
-  '• 🏆 Live competition rankings & score breakdown\n\n' +
-  'Tap "Start" below to register and get your invite link!';
+  'NilePixel StarLift Project Showcase\n\n' +
+  'Official bot for the Upwork First Job Challenge (Nov 16 – 30, 2026) by NilePixel Technologies.\n\n' +
+  'Features:\n' +
+  '• Submit your project or developer portfolio for channel showcase\n' +
+  '• Generate your personal channel invite link\n' +
+  '• Track confirmed members joining @NilePixelTech\n\n' +
+  'Tap "Start" below to begin!';
 
 export const DEFAULT_BOT_SHORT_DESCRIPTION =
-  'Official referral & leaderboard bot for NilePixel StarLift Project Showcase Challenge (Nov 15–30, 2026).';
+  'Official bot for NilePixel StarLift Upwork First Job Challenge (Nov 16–30, 2026).';
 
 export const BOT_COMMANDS = [
-  { command: 'start', description: '🚀 Register & open main menu' },
-  { command: 'submit', description: '💡 Submit project for channel showcase review' },
-  { command: 'mylink', description: '🔗 Get your personal channel invite link' },
-  { command: 'stats', description: '📊 Check your referrals, points & rank' },
-  { command: 'leaderboard', description: '🏆 View top 10 competition standings' },
-  { command: 'help', description: 'ℹ️ Scoring guide, rules & support' },
+  { command: 'start', description: 'Open the main menu' },
+  { command: 'submit', description: 'Submit or update your project specification' },
+  { command: 'mylink', description: 'View your personal channel invitation link' },
+  { command: 'stats', description: 'Check your confirmed referrals and status' },
+  { command: 'help', description: 'Challenge guide, rules and support' },
 ];
 
 /**

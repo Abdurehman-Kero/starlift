@@ -110,18 +110,18 @@ async function finalizeSubmission(
       `━━━━━━━━━━━━━━━━━━━━━━\n` +
       `<b>Your Channel Invite Link is Ready:</b>\n` +
       `${linkText}\n\n` +
-      `Share this link with your network to invite friends to @NilePixelTech. Every confirmed join boosts your rank on the leaderboard.`,
+      `Share this link with your network to invite friends to @NilePixelTech. Every confirmed join is credited directly to your profile.`,
     Markup.inlineKeyboard([
       [
         Markup.button.callback('Get My Invite Link', 'cmd_mylink'),
-        Markup.button.callback('My Stats & Rank', 'cmd_stats'),
+        Markup.button.callback('My Stats', 'cmd_stats'),
       ],
       [
-        Markup.button.callback('Leaderboard', 'cmd_leaderboard'),
         Markup.button.url('Official Channel', 'https://t.me/NilePixelTech'),
+        Markup.button.url('Contact Support', 'https://t.me/NilePixelSupportBot'),
       ],
       [
-        Markup.button.url('Contact Support (@NilePixelSupportBot)', 'https://t.me/NilePixelSupportBot'),
+        Markup.button.callback('Main Menu', 'cmd_start'),
       ],
     ])
   );
@@ -155,7 +155,7 @@ export async function startSubmissionWizard(
           `If you want to update your submission details, tap <b>Update Project Details</b> below.`,
         Markup.inlineKeyboard([
           [Markup.button.callback('Update Project Details', 'cmd_update_submit')],
-          [Markup.button.callback('My Stats & Rank', 'cmd_stats')],
+          [Markup.button.callback('My Stats', 'cmd_stats')],
           [Markup.button.callback('Main Menu', 'cmd_start')],
         ])
       );

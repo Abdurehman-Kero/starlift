@@ -13,49 +13,29 @@ const MEDALS = ['#1', '#2', '#3'];
 
 async function handleLeaderboard(ctx: Context) {
   try {
-    const scores = await calculateScores();
-    const top10 = scores.slice(0, 10);
-
-    if (top10.length === 0) {
-      await ctx.reply(
-        'No participants ranked on the leaderboard yet.\n\n' +
-          'Be the first! Use /mylink to invite friends and claim the top spot.'
-      );
-      return;
-    }
-
-    const lines = top10.map((entry) => {
-      const rankTag = MEDALS[entry.rank - 1] ?? `#${entry.rank}`;
-      const name = escapeHtml(
-        entry.username ? `@${entry.username}` : entry.firstName
-      );
-      const points = entry.finalScore.toFixed(1);
-      return `<b>${rankTag}</b> ${name} — <b>${entry.referralCount}</b> referrals, <b>${entry.reactionCount}</b> reactions (<code>${points} pts</code>)`;
-    });
-
-    const header =
-      `<b>StarLift Competition Leaderboard</b>\n` +
-      `<i>Top 10 Contestants</i>\n\n` +
-      lines.join('\n') +
-      `\n\n<b>Challenge Deadline:</b> November 30, 2026\n` +
-      `<i>Rankings update automatically based on verified joins and reactions.</i>`;
+    const text =
+      `<b>StarLift Competition Evaluation</b>\n\n` +
+      `The official contestant standings and final project evaluations are tracked and managed directly by the NilePixel review committee on the administration portal.\n\n` +
+      `<b>Challenge Period:</b> November 16 – November 30, 2026\n\n` +
+      `Keep inviting members to @NilePixelTech using your personal link to strengthen your candidacy for the top 3 Upwork job contracts and 5-star reviews.\n\n` +
+      `To view your confirmed referrals and invite link, tap <b>My Stats</b> below.`;
 
     await ctx.replyWithHTML(
-      header,
+      text,
       Markup.inlineKeyboard([
         [
-          Markup.button.callback('My Stats & Rank', 'cmd_stats'),
+          Markup.button.callback('My Stats', 'cmd_stats'),
           Markup.button.callback('Get My Invite Link', 'cmd_mylink'),
         ],
         [
-          Markup.button.callback('Refresh Leaderboard', 'cmd_leaderboard'),
+          Markup.button.url('Official Channel', 'https://t.me/NilePixelTech'),
           Markup.button.callback('Main Menu', 'cmd_start'),
         ],
       ])
     );
   } catch (error) {
     logger.error('Error in /leaderboard command', { error });
-    await ctx.reply('An error occurred while loading the leaderboard. Please try again.');
+    await ctx.reply('An error occurred while loading this page. Please try again.');
   }
 }
 

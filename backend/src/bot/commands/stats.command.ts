@@ -24,18 +24,11 @@ async function handleStats(ctx: Context) {
       return;
     }
 
-    const [referralCount, scores, activeLink, submission] = await Promise.all([
+    const [referralCount, activeLink, submission] = await Promise.all([
       getReferralCount(participant.id),
-      calculateScores(),
       getActiveInviteLink(participant.id),
       getSubmissionByParticipantId(participant.id),
     ]);
-
-    const myScore = scores.find((s) => s.id === participant.id);
-    const rank = myScore?.rank ?? scores.length + 1;
-    const totalParticipants = scores.length;
-    const finalScore = myScore ? myScore.finalScore.toFixed(1) : '0.0';
-    const reactionCount = myScore?.reactionCount ?? 0;
 
     const linkText = activeLink
       ? `<code>${escapeHtml(activeLink.inviteLink)}</code>`
@@ -52,31 +45,25 @@ async function handleStats(ctx: Context) {
     const code = escapeHtml(participant.referralCode);
 
     const text =
-      `<b>Competition Statistics</b>\n\n` +
+      `<b>Your Referral Statistics</b>\n\n` +
       `• <b>Contestant:</b> ${name}\n` +
-      `• <b>Referral Code:</b> <code>${code}</code>\n` +
-      `• <b>Current Standing:</b> Rank #${rank} of ${totalParticipants} contestants\n\n` +
-      `<b>Your Performance:</b>\n` +
-      `• <b>Referrals:</b> ${referralCount} members\n` +
-      `• <b>Reactions:</b> ${reactionCount} reactions\n` +
-      `• <b>Total Score:</b> ${finalScore} points (70% referrals + 30% reactions)\n\n` +
+      `• <b>Referral Code:</b> <code>${code}</code>\n\n` +
+      `<b>Performance:</b>\n` +
+      `• <b>Members Joined:</b> ${referralCount} members\n\n` +
       `${showcaseLine}\n` +
       `<b>Your Personal Invite Link:</b>\n${linkText}\n\n` +
-      `<b>Tip to improve your rank:</b>\n` +
-      `Share your personal invite link with friends and communities. When people join through your link and react to your showcase post, your score increases and boosts your rank toward the top 3!`;
+      `<b>How to invite more members:</b>\n` +
+      `Share your personal invite link with friends and developer groups. Every verified member who joins @NilePixelTech through your link is counted toward your total.`;
 
     const buttons = [
       [
         Markup.button.callback('Get Invite Link', 'cmd_mylink'),
-        Markup.button.callback('Leaderboard', 'cmd_leaderboard'),
+        Markup.button.callback('Refresh Stats', 'cmd_stats'),
       ],
       [
         submission?.status === 'published' && submission.channelPostUrl
           ? Markup.button.url('View Showcase Post', submission.channelPostUrl)
           : Markup.button.callback('Update Project', 'cmd_update_submit'),
-        Markup.button.callback('Refresh Stats', 'cmd_stats'),
-      ],
-      [
         Markup.button.callback('Main Menu', 'cmd_start'),
       ],
     ];

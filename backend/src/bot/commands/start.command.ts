@@ -1,5 +1,9 @@
 import { Context, Markup, Telegraf } from 'telegraf';
-import { getOrCreateParticipant, getParticipantByReferralCode } from '../../services/participant.service';
+import {
+  getOrCreateParticipant,
+  getParticipantByReferralCode,
+  getReferralCount,
+} from '../../services/participant.service';
 import { createReferral } from '../../services/referral.service';
 import { getSubmissionByParticipantId } from '../../services/showcase.service';
 import { getActiveInviteLink } from '../../services/invitation.service';
@@ -109,19 +113,19 @@ async function renderStartScreen(ctx: Context) {
 
     let statusSection = '';
     if (submission.status === 'published' && submission.channelPostUrl) {
-      const subReactions = submission.reactions?.reduce((sum, r) => sum + r.reactionCount, 0) || 0;
-      const directReactions = (submission.participant as any).reactions?.reduce((sum: number, r: any) => sum + r.reactionCount, 0) || 0;
-      const reactions = Math.max(subReactions, directReactions);
       statusSection =
         `• <b>Status:</b> Live on @NilePixelTech\n` +
-        `• <b>Showcase Post:</b> <a href="${submission.channelPostUrl}">${submission.channelPostUrl}</a>\n` +
-        `• <b>Reactions:</b> ${reactions} community reactions\n`;
+        `• <b>Showcase Post:</b> <a href="${submission.channelPostUrl}">${submission.channelPostUrl}</a>\n`;
     } else {
       statusSection =
         `• <b>Status:</b> ${submission.status.toUpperCase()} (Under Review)\n`;
     }
 
-    const activeLink = await getActiveInviteLink(participant.id);
+    const [activeLink, referralCount] = await Promise.all([
+      getActiveInviteLink(participant.id),
+      getReferralCount(participant.id),
+    ]);
+
     const linkText = activeLink
       ? `<code>${escapeHtml(activeLink.inviteLink)}</code>`
       : '<i>Tap "Get Invite Link" below to generate your link</i>';
@@ -132,10 +136,11 @@ async function renderStartScreen(ctx: Context) {
       `• <b>Title:</b> ${subTitle}\n` +
       `• <b>Demo / Portfolio:</b> <code>${subUrl}</code>\n` +
       `${bannerNotice}` +
-      `${statusSection}\n` +
+      `${statusSection}` +
+      `• <b>Members Joined:</b> ${referralCount} members\n\n` +
       `<b>Your Channel Invite Link:</b>\n` +
       `${linkText}\n\n` +
-      `Share your personal invite link to gather support and climb the leaderboard.`;
+      `Share your personal invite link with friends and communities to invite more members to @NilePixelTech.`;
 
     const keyboardButtons = [];
     if (submission.channelPostUrl) {
@@ -143,14 +148,13 @@ async function renderStartScreen(ctx: Context) {
     }
     keyboardButtons.push([
       Markup.button.callback('Get Invite Link', 'cmd_mylink'),
-      Markup.button.callback('My Stats & Rank', 'cmd_stats'),
+      Markup.button.callback('My Stats', 'cmd_stats'),
     ]);
     keyboardButtons.push([
       Markup.button.callback('Update Project Details', 'cmd_update_submit'),
-      Markup.button.callback('Leaderboard', 'cmd_leaderboard'),
+      Markup.button.url('Official Channel', 'https://t.me/NilePixelTech'),
     ]);
     keyboardButtons.push([
-      Markup.button.url('Official Channel', 'https://t.me/NilePixelTech'),
       Markup.button.url('Contact Support', 'https://t.me/NilePixelSupportBot'),
     ]);
 

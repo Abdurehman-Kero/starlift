@@ -12,8 +12,7 @@ async function handleHelp(ctx: Context) {
         `/start - Open the main menu\n` +
         `/submit - Submit or update your project specification\n` +
         `/mylink - View your personal channel invitation link\n` +
-        `/stats - Check your referrals, reactions, points & rank\n` +
-        `/leaderboard - View the top 10 contestants\n` +
+        `/stats - Check your confirmed referrals and invite link\n` +
         `/help - Show this guide\n\n` +
         `<b>How to Compete:</b>\n` +
         `1. Submit your project or developer portfolio specification via /submit.\n` +
@@ -32,14 +31,11 @@ async function handleHelp(ctx: Context) {
           Markup.button.callback('Get Invite Link', 'cmd_mylink'),
         ],
         [
-          Markup.button.callback('My Stats & Rank', 'cmd_stats'),
-          Markup.button.callback('Leaderboard', 'cmd_leaderboard'),
-        ],
-        [
+          Markup.button.callback('My Stats', 'cmd_stats'),
           Markup.button.url('Official Channel', 'https://t.me/NilePixelTech'),
-          Markup.button.url('Contact Support', 'https://t.me/NilePixelSupportBot'),
         ],
         [
+          Markup.button.url('Contact Support', 'https://t.me/NilePixelSupportBot'),
           Markup.button.callback('Main Menu', 'cmd_start'),
         ],
       ])

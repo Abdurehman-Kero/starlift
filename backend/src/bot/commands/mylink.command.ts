@@ -39,13 +39,13 @@ async function handleMyLink(ctx: Context) {
           `<b>How It Works:</b>\n` +
           `• Share this link with friends, colleagues, and developer groups.\n` +
           `• When someone joins @NilePixelTech through this link, they are credited as your referral.\n` +
-          `• Track your referrals and rank anytime with /stats.`,
+          `• Track your referrals anytime with /stats.`,
         Markup.inlineKeyboard([
           [Markup.button.url('Open Channel Invite', existing.inviteLink)],
           [Markup.button.url('Share with Friends', shareUrl)],
           [
             Markup.button.callback('View My Stats', 'cmd_stats'),
-            Markup.button.callback('Leaderboard', 'cmd_leaderboard'),
+            Markup.button.callback('Main Menu', 'cmd_start'),
           ],
         ])
       );
@@ -101,13 +101,13 @@ async function handleMyLink(ctx: Context) {
           `<b>How It Works:</b>\n` +
           `• Share this link with friends, colleagues, and developer groups.\n` +
           `• When someone joins @NilePixelTech through this link, they are credited as your referral.\n` +
-          `• Track your referrals and rank anytime with /stats.`,
+          `• Track your referrals anytime with /stats.`,
         Markup.inlineKeyboard([
           [Markup.button.url('Open Channel Invite', created.invite_link)],
           [Markup.button.url('Share with Friends', shareUrl)],
           [
             Markup.button.callback('View My Stats', 'cmd_stats'),
-            Markup.button.callback('Leaderboard', 'cmd_leaderboard'),
+            Markup.button.callback('Main Menu', 'cmd_start'),
           ],
         ])
       );
