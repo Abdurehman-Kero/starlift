@@ -1,0 +1,143 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AdminUser {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         String   @default("admin")
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("admin_users")
+}
+
+model Participant {
+  id             Int      @id @default(autoincrement())
+  telegramId     BigInt   @unique
+  username       String?
+  firstName      String
+  lastName       String?
+  referralCode   String   @unique
+  registeredAt   DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  isActive       Boolean  @default(true)
+
+  invitationLinks   InvitationLink[]
+  referralsMade     Referral[]         @relation("ReferrerRelation")
+  referralReceived  Referral?          @relation("ReferredRelation")
+  projectSubmission ProjectSubmission?
+  reactions         ProjectReaction[]
+  activityLogs      ActivityLog[]
+
+  @@index([telegramId])
+  @@index([referralCode])
+  @@map("participants")
+}
+
+model Referral {
+  id               Int      @id @default(autoincrement())
+  referrerId       Int
+  referredId       Int      @unique
+  invitationLinkId Int?
+  status           String   @default("confirmed")
+  joinedAt         DateTime @default(now())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  referrer       Participant     @relation("ReferrerRelation", fields: [referrerId], references: [id])
+  referred       Participant     @relation("ReferredRelation", fields: [referredId], references: [id])
+  invitationLink InvitationLink? @relation(fields: [invitationLinkId], references: [id])
+
+  @@index([referrerId])
+  @@index([referredId])
+  @@map("referrals")
+}
+
+model InvitationLink {
+  id             Int       @id @default(autoincrement())
+  participantId  Int
+  inviteLink     String    @unique
+  inviteLinkName String?
+  telegramLinkId String?   @unique
+  isActive       Boolean   @default(true)
+  expiresAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  participant Participant @relation(fields: [participantId], references: [id])
+  referrals   Referral[]
+
+  @@index([participantId])
+  @@index([inviteLink])
+  @@map("invitation_links")
+}
+
+model ProjectSubmission {
+  id            Int       @id @default(autoincrement())
+  participantId Int       @unique
+  projectUrl    String
+  description   String    @db.Text
+  status        String    @default("pending")
+  verifiedAt    DateTime?
+  verifiedBy    String?
+  submittedAt   DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  participant Participant       @relation(fields: [participantId], references: [id])
+  reactions   ProjectReaction[]
+
+  @@map("project_submissions")
+}
+
+model ProjectReaction {
+  id            Int      @id @default(autoincrement())
+  submissionId  Int
+  participantId Int?
+  reactionCount Int      @default(0)
+  source        String   @default("manual")
+  recordedAt    DateTime @default(now())
+  recordedBy    String?
+  updatedAt     DateTime @updatedAt
+
+  submission  ProjectSubmission @relation(fields: [submissionId], references: [id])
+  participant Participant?      @relation(fields: [participantId], references: [id])
+
+  @@map("project_reactions")
+}
+
+model ChallengeSettings {
+  id          Int      @id @default(autoincrement())
+  key         String   @unique
+  value       String   @db.Text
+  description String?
+  updatedAt   DateTime @updatedAt
+  updatedBy   String?
+
+  @@map("challenge_settings")
+}
+
+model ActivityLog {
+  id            Int      @id @default(autoincrement())
+  participantId Int?
+  adminEmail    String?
+  action        String
+  details       String?  @db.Text
+  ipAddress     String?
+  createdAt     DateTime @default(now())
+
+  participant Participant? @relation(fields: [participantId], references: [id])
+
+  @@index([participantId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("activity_logs")
+}
