@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { systemApi } from '../services/api';
+import { systemApi, API_URL } from '../services/api';
 import {
   AlertCircle,
   AlertTriangle,
@@ -103,7 +103,7 @@ export const LoginPage: React.FC = () => {
             <div>
               <p className="font-semibold text-rose-900">Backend Server Offline</p>
               <p className="mt-0.5 leading-relaxed">
-                Cannot reach backend API at <code className="font-mono bg-rose-100 px-1 py-0.5 rounded">http://localhost:3001</code>. Start it by running <code className="font-mono bg-rose-100 px-1 py-0.5 rounded">npm run dev</code> inside <code className="font-mono">backend/</code>.
+                Cannot reach backend API at <code className="font-mono bg-rose-100 px-1 py-0.5 rounded">{API_URL || 'http://localhost:3001'}</code>. Make sure the backend service on Render is live.
               </p>
             </div>
           </div>

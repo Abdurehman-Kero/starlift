@@ -1,7 +1,14 @@
 import axios from 'axios';
 
+// Backend API URL (defaults to production Render deployment, or custom VITE_API_URL)
+const rawApiUrl =
+  import.meta.env.VITE_API_URL?.trim() ||
+  (import.meta.env.DEV ? '' : 'https://starlift.onrender.com');
+
+export const API_URL = rawApiUrl.replace(/\/+$/, '');
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: `${API_URL}/api`,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -24,7 +31,7 @@ api.interceptors.response.use(
       const refreshToken = localStorage.getItem('np_refreshToken');
       if (refreshToken) {
         try {
-          const res = await axios.post('/api/auth/refresh', { refreshToken });
+          const res = await axios.post(`${API_URL}/api/auth/refresh`, { refreshToken });
           if (res.data.success && res.data.data.accessToken) {
             localStorage.setItem('np_accessToken', res.data.data.accessToken);
             if (res.data.data.refreshToken) {
