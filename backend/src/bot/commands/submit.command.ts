@@ -61,20 +61,29 @@ async function finalizeSubmission(
     : `⚠️ <b>Screenshot/Banner:</b> <i>Not attached (you can send a photo anytime to attach it)</i>\n`;
 
   await ctx.replyWithHTML(
-    `🎉 <b>PROJECT SPECIFICATION SUBMITTED!</b>\n\n` +
-      `🏷️ <b>Title:</b> <b>${title}</b>\n` +
-      `🔗 <b>Demo:</b> <code>${url}</code>\n` +
+    `🎉 <b>PROJECT SPECIFICATION SUBMITTED SUCCESSFULLY!</b>\n\n` +
+      `🏷️ <b>Project Title:</b> <b>${title}</b>\n` +
+      `🔗 <b>Demo / Repo URL:</b> <code>${url}</code>\n` +
       `${bannerNotice}` +
-      `💡 <b>Pitch:</b>\n${desc}\n\n` +
-      `⏳ <b>Status:</b> <b>UNDER REVIEW</b>\n` +
-      `Our organizers have been notified in the Administrator Group. Once approved, your project card will be published directly to @NilePixelTech with automated reaction voting!\n\n` +
+      `💡 <b>Pitch Description:</b>\n${desc}\n\n` +
+      `⏳ <b>Status:</b> <b>UNDER REVIEW</b>\n\n` +
+      `✅ Your project specification has been delivered directly to the <b>StarLift Review Committee</b>!\n\n` +
+      `📢 <b>What to do now:</b>\n` +
+      `Please wait and keep an eye on our official channel <b>@NilePixelTech</b> for your showcase announcement and approval.\n\n` +
+      `💬 <b>Need Help or Follow-up?</b>\n` +
+      `If your project showcase is not announced on @NilePixelTech or you have any questions, please contact our support team at:\n` +
+      `👉 <b>@NilePixelSupportBot</b>\n\n` +
       `━━━━━━━━━━━━━━━━━━━━━━\n` +
-      `🚀 <b>YOUR NEXT STEP RIGHT NOW:</b>\n` +
-      `Start earning your <b>70% Referral Score</b>! Tap below to get your personal channel invite link:`,
+      `🚀 <b>WHILE YOU WAIT: EARN YOUR 70% REFERRAL SCORE</b>\n` +
+      `Start inviting members right now! Every friend who joins @NilePixelTech through your personal link boosts your <b>70% Referral Score</b>:`,
     Markup.inlineKeyboard([
       [
         Markup.button.callback('🔗 Get My Invite Link', 'cmd_mylink'),
         Markup.button.callback('📊 My Stats & Rank', 'cmd_stats'),
+      ],
+      [
+        Markup.button.url('📢 Official Channel (@NilePixelTech)', 'https://t.me/NilePixelTech'),
+        Markup.button.url('💬 Contact Support (@NilePixelSupportBot)', 'https://t.me/NilePixelSupportBot'),
       ],
       [
         Markup.button.callback('🏆 Leaderboard', 'cmd_leaderboard'),

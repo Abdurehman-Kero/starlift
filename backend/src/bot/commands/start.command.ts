@@ -144,6 +144,9 @@ async function renderStartScreen(ctx: Context) {
       `🔗 <b>Demo:</b> <code>${subUrl}</code>\n` +
       `${bannerNotice}` +
       `${statusSection}\n` +
+      `📢 <b>Showcase Announcement:</b>\n` +
+      `Please keep an eye on <b>@NilePixelTech</b> for your project approval!\n` +
+      `If not announced on the channel, contact: <b>@NilePixelSupportBot</b>.\n\n` +
       `━━━━━━━━━━━━━━━━━━━━━━\n` +
       `🤝 <b>NEXT STEP: EARN YOUR 70% REFERRAL SCORE</b>\n` +
       `Share your personal channel invite link with friends and developers. Every verified join boosts your ranking!`;
@@ -162,6 +165,7 @@ async function renderStartScreen(ctx: Context) {
     ]);
     keyboardButtons.push([
       Markup.button.url('📢 Official Channel (@NilePixelTech)', 'https://t.me/NilePixelTech'),
+      Markup.button.url('💬 Contact Support (@NilePixelSupportBot)', 'https://t.me/NilePixelSupportBot'),
     ]);
 
     await ctx.replyWithHTML(existingText, Markup.inlineKeyboard(keyboardButtons));

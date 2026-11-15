@@ -31,7 +31,8 @@ async function handleHelp(ctx: Context) {
         `• Only genuine members joining via your personal link are credited.\n` +
         `• If an invited member leaves the channel, the referral is revoked.\n` +
         `• Self-referrals and fake bot accounts are automatically disqualified.\n\n` +
-        `📢 <b>Official Channel:</b> @NilePixelTech`,
+        `📢 <b>Official Channel:</b> @NilePixelTech\n` +
+        `💬 <b>Questions & Support:</b> @NilePixelSupportBot`,
       Markup.inlineKeyboard([
         [
           Markup.button.callback('💡 Submit Project', 'cmd_submit'),
@@ -42,7 +43,10 @@ async function handleHelp(ctx: Context) {
           Markup.button.callback('🏆 Leaderboard', 'cmd_leaderboard'),
         ],
         [
-          Markup.button.url('📢 Official Channel (@NilePixelTech)', 'https://t.me/NilePixelTech'),
+          Markup.button.url('📢 Channel (@NilePixelTech)', 'https://t.me/NilePixelTech'),
+          Markup.button.url('💬 Support (@NilePixelSupportBot)', 'https://t.me/NilePixelSupportBot'),
+        ],
+        [
           Markup.button.callback('🏠 Main Menu', 'cmd_start'),
         ],
       ])
