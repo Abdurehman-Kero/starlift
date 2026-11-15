@@ -89,6 +89,7 @@ model ProjectSubmission {
   projectTitle     String?
   projectUrl       String
   description      String    @db.Text
+  imageUrl         String?
   status           String    @default("pending")
   channelMessageId Int?      @unique
   channelPostUrl   String?

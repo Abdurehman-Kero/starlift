@@ -81,9 +81,17 @@ export const submissionsApi = {
   get: (participantId: number) => api.get(`/submissions/${participantId}`),
   save: (
     participantId: number,
-    data: { projectTitle?: string; projectUrl: string; description: string; status?: string }
+    data: {
+      projectTitle?: string;
+      projectUrl: string;
+      description: string;
+      imageUrl?: string;
+      status?: string;
+    }
   ) => api.post(`/submissions/${participantId}`, data),
   publish: (submissionId: number) => api.post(`/submissions/${submissionId}/publish`),
+  unpublish: (submissionId: number) => api.post(`/submissions/${submissionId}/unpublish`),
+  updateStatus: (id: number, status: string) => api.patch(`/submissions/${id}/status`, { status }),
 };
 
 // Referrals

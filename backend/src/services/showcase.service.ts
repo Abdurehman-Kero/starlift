@@ -16,6 +16,7 @@ export interface CreateSubmissionData {
   projectTitle?: string;
   projectUrl: string;
   description: string;
+  imageUrl?: string | null;
   status?: string;
 }
 
@@ -31,6 +32,7 @@ export async function createOrUpdateSubmission(data: CreateSubmissionData) {
         projectTitle: data.projectTitle ?? existing.projectTitle,
         projectUrl: data.projectUrl,
         description: data.description,
+        imageUrl: data.imageUrl !== undefined ? data.imageUrl : existing.imageUrl,
         status: data.status ?? existing.status,
       },
       include: { participant: true, reactions: true },
@@ -43,6 +45,7 @@ export async function createOrUpdateSubmission(data: CreateSubmissionData) {
       projectTitle: data.projectTitle,
       projectUrl: data.projectUrl,
       description: data.description,
+      imageUrl: data.imageUrl ?? null,
       status: data.status ?? 'pending',
     },
     include: { participant: true, reactions: true },
@@ -92,30 +95,51 @@ export async function publishShowcaseToChannel(submissionId: number, adminEmail?
   const inviteLink = submission.participant.invitationLinks[0]?.inviteLink;
 
   const authorLine = contestantHandle
-    ? `👨‍💻 <b>Contestant:</b> ${contestantName} (${contestantHandle})`
-    : `👨‍💻 <b>Contestant:</b> ${contestantName}`;
+    ? `👨‍💻 <b>Creator:</b> ${contestantName} (${contestantHandle})`
+    : `👨‍💻 <b>Creator:</b> ${contestantName}`;
 
   const linkActionText = inviteLink
-    ? `2. 🤝 Join @NilePixelTech using their personal link:\n   <code>${inviteLink}</code>`
-    : `2. 🤝 Support them in the NilePixel StarLift Showcase!`;
+    ? `🤝 <b>Support ${contestantName}:</b>\nJoin via their personal link:\n<code>${inviteLink}</code>`
+    : `🤝 <b>Support ${contestantName}</b> in the StarLift Showcase!`;
 
-  const postText =
-    `🚀 <b>StarLift Project Showcase: ${title}</b>\n\n` +
+  // Senior-designer formatted clean Telegram card
+  const postCard =
+    `🌟 <b>STARLIFT PROJECT SHOWCASE</b>\n` +
+    `🚀 <b>${title}</b>\n\n` +
     `${authorLine}\n` +
-    `🔑 <b>Referral Code:</b> <code>${referralCode}</code>\n` +
-    `🔗 <b>Project URL:</b> <a href="${projectUrl}">${projectUrl}</a>\n\n` +
-    `💡 <b>Project Pitch:</b>\n` +
+    `🔑 <b>Code:</b> <code>${referralCode}</code>\n` +
+    `🔗 <b>Live Demo / Repo:</b> <a href="${projectUrl}">${projectUrl}</a>\n\n` +
+    `💡 <b>About the Project:</b>\n` +
     `${description}\n\n` +
-    `🗳️ <b>How to Vote & Support:</b>\n` +
-    `1. ❤️ <b>React to this post</b> (❤️, 🔥, 🚀, 👍, 👏) to cast your vote! (30% weight)\n` +
-    `${linkActionText}\n\n` +
-    `<i>NilePixel StarLift Project Showcase Challenge (Nov 15 – Nov 30, 2026)</i>`;
+    `━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `🗳️ <b>COMMUNITY VOTING (30% Score Weight):</b>\n` +
+    `React below with <b>❤️, 🔥, 🚀, 👍, 👏</b> to cast your vote!\n\n` +
+    `${linkActionText}\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `<i>NilePixel StarLift Challenge (Nov 15 – 30, 2026)</i>`;
 
-  // Publish to Telegram Channel
-  const sentMessage = await bot.telegram.sendMessage(targetChannel, postText, {
-    parse_mode: 'HTML',
-    link_preview_options: { is_disabled: false },
-  });
+  let sentMessage: { message_id: number };
+
+  // If image URL is provided, send as photo with caption; fallback to message if photo fails
+  if (submission.imageUrl && submission.imageUrl.trim().startsWith('http')) {
+    try {
+      sentMessage = await bot.telegram.sendPhoto(targetChannel, submission.imageUrl.trim(), {
+        caption: postCard,
+        parse_mode: 'HTML',
+      });
+    } catch (photoErr) {
+      logger.warn('Failed to send showcase photo, falling back to text message:', { photoErr });
+      sentMessage = await bot.telegram.sendMessage(targetChannel, postCard, {
+        parse_mode: 'HTML',
+        link_preview_options: { is_disabled: false },
+      });
+    }
+  } else {
+    sentMessage = await bot.telegram.sendMessage(targetChannel, postCard, {
+      parse_mode: 'HTML',
+      link_preview_options: { is_disabled: false },
+    });
+  }
 
   const messageId = sentMessage.message_id;
 
@@ -163,7 +187,7 @@ export async function publishShowcaseToChannel(submissionId: number, adminEmail?
   try {
     const dmText =
       `🎉 <b>Congratulations, ${contestantName}!</b>\n\n` +
-      `Your project <b>${title}</b> has officially been published on the channel!\n\n` +
+      `Your project <b>${title}</b> has officially been published on the official channel!\n\n` +
       `📢 <b>Showcase Post Link:</b>\n` +
       `<a href="${postUrl}">${postUrl}</a>\n\n` +
       `🔥 <b>What to do next:</b>\n` +
@@ -180,6 +204,68 @@ export async function publishShowcaseToChannel(submissionId: number, adminEmail?
   }
 
   return updatedSubmission;
+}
+
+/**
+ * Removes the showcase post from the Telegram channel and resets status to pending/draft
+ */
+export async function unpublishShowcaseFromChannel(submissionId: number, adminEmail?: string) {
+  const submission = await prisma.projectSubmission.findUnique({
+    where: { id: submissionId },
+    include: { participant: true },
+  });
+
+  if (!submission) {
+    throw new Error('Project submission not found');
+  }
+
+  const channelSetting = await getSetting('TELEGRAM_CHANNEL_ID');
+  const targetChannel = (channelSetting || env.TELEGRAM_CHANNEL_ID || '@NilePixelTech').trim();
+
+  // If there is an active message on the channel, delete it via Telegram API
+  if (submission.channelMessageId) {
+    try {
+      await bot.telegram.deleteMessage(targetChannel, submission.channelMessageId);
+      logger.info(
+        `Successfully deleted message #${submission.channelMessageId} from channel ${targetChannel}`
+      );
+    } catch (delErr) {
+      logger.warn(
+        `Failed to delete message #${submission.channelMessageId} from Telegram (may already be deleted):`,
+        { delErr }
+      );
+    }
+  }
+
+  // Reset reaction count in DB
+  await prisma.projectReaction.updateMany({
+    where: { submissionId: submission.id },
+    data: { reactionCount: 0 },
+  });
+
+  // Update submission in DB
+  const updated = await prisma.projectSubmission.update({
+    where: { id: submission.id },
+    data: {
+      channelMessageId: null,
+      channelPostUrl: null,
+      status: 'pending',
+      publishedAt: null,
+    },
+    include: { participant: true, reactions: true },
+  });
+
+  // Log activity
+  await prisma.activityLog.create({
+    data: {
+      adminEmail: adminEmail ?? 'admin',
+      participantId: submission.participantId,
+      action: 'SHOWCASE_REMOVED_FROM_CHANNEL',
+      details: JSON.stringify({ submissionId: submission.id }),
+    },
+  });
+
+  return updated;
 }
 
 /**

@@ -16,6 +16,7 @@ import {
   Plus,
   Edit2,
   Sparkles,
+  Trash2,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -65,6 +66,7 @@ interface ParticipantDetail extends ParticipantItem {
     projectTitle?: string | null;
     projectUrl: string;
     description: string;
+    imageUrl?: string | null;
     status: string;
     channelMessageId?: number | null;
     channelPostUrl?: string | null;
@@ -104,15 +106,15 @@ export const ParticipantsPage: React.FC = () => {
 
   const verifyMutation = useMutation({
     mutationFn: ({ id, status }: { id: number; status: string }) =>
-      participantsApi.verifySubmission(id, status),
+      submissionsApi.updateStatus(id, status),
     onSuccess: () => {
       toast.success('Submission verification status updated.');
       queryClient.invalidateQueries({ queryKey: ['participants'] });
       queryClient.invalidateQueries({ queryKey: ['participant-detail', selectedId] });
       queryClient.invalidateQueries({ queryKey: ['leaderboard'] });
     },
-    onError: () => {
-      toast.error('Failed to update submission status.');
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || 'Failed to update submission status.');
     },
   });
 
@@ -120,6 +122,7 @@ export const ParticipantsPage: React.FC = () => {
   const [subTitle, setSubTitle] = useState('');
   const [subUrl, setSubUrl] = useState('');
   const [subDesc, setSubDesc] = useState('');
+  const [subImage, setSubImage] = useState('');
 
   const publishMutation = useMutation({
     mutationFn: (submissionId: number) => submissionsApi.publish(submissionId),
@@ -131,6 +134,19 @@ export const ParticipantsPage: React.FC = () => {
     },
     onError: (err: any) => {
       toast.error(err?.response?.data?.message || 'Failed to publish showcase to channel.');
+    },
+  });
+
+  const unpublishMutation = useMutation({
+    mutationFn: (submissionId: number) => submissionsApi.unpublish(submissionId),
+    onSuccess: (res: any) => {
+      toast.success(res?.data?.message || 'Showcase post deleted from @NilePixelTech.');
+      queryClient.invalidateQueries({ queryKey: ['participants'] });
+      queryClient.invalidateQueries({ queryKey: ['participant-detail', selectedId] });
+      queryClient.invalidateQueries({ queryKey: ['leaderboard'] });
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || 'Failed to remove showcase from channel.');
     },
   });
 
@@ -659,6 +675,7 @@ export const ParticipantsPage: React.FC = () => {
                               setSubTitle(detail.projectSubmission?.projectTitle || '');
                               setSubUrl(detail.projectSubmission?.projectUrl || '');
                               setSubDesc(detail.projectSubmission?.description || '');
+                              setSubImage(detail.projectSubmission?.imageUrl || '');
                               setIsEditingSubmission(true);
                             }}
                             className="btn-base btn-secondary py-1 px-2.5 text-[11px] font-semibold inline-flex items-center gap-1"
@@ -707,6 +724,28 @@ export const ParticipantsPage: React.FC = () => {
 
                           <div>
                             <label className="text-[11px] font-semibold text-slate-700 block mb-1">
+                              Showcase Banner / Image URL (Optional)
+                            </label>
+                            <input
+                              type="url"
+                              placeholder="https://example.com/screenshot.png or image link"
+                              value={subImage}
+                              onChange={(e) => setSubImage(e.target.value)}
+                              className="input-base text-xs py-1.5 font-mono"
+                            />
+                            {subImage && (
+                              <div className="mt-2 rounded-lg border border-slate-200 overflow-hidden max-h-36 bg-slate-50 flex items-center justify-center p-1">
+                                <img
+                                  src={subImage}
+                                  alt="Banner preview"
+                                  className="max-h-36 object-contain rounded"
+                                />
+                              </div>
+                            )}
+                          </div>
+
+                          <div>
+                            <label className="text-[11px] font-semibold text-slate-700 block mb-1">
                               Description / Pitch *
                             </label>
                             <textarea
@@ -740,7 +779,8 @@ export const ParticipantsPage: React.FC = () => {
                                     projectTitle: subTitle,
                                     projectUrl: subUrl,
                                     description: subDesc,
-                                    status: 'verified',
+                                    imageUrl: subImage || null,
+                                    status: detail.projectSubmission?.status ?? 'verified',
                                   },
                                 });
                               }}
@@ -753,6 +793,16 @@ export const ParticipantsPage: React.FC = () => {
                         </div>
                       ) : detail.projectSubmission ? (
                         <div className="space-y-3 text-xs">
+                          {detail.projectSubmission.imageUrl && (
+                            <div className="rounded-lg overflow-hidden border border-slate-200 max-h-48 bg-slate-50 flex items-center justify-center">
+                              <img
+                                src={detail.projectSubmission.imageUrl}
+                                alt="Showcase banner"
+                                className="w-full max-h-48 object-cover"
+                              />
+                            </div>
+                          )}
+
                           {detail.projectSubmission.projectTitle && (
                             <div>
                               <span className="text-[11px] text-slate-500 font-medium block">
@@ -811,14 +861,27 @@ export const ParticipantsPage: React.FC = () => {
                                   ⚡ All channel emoji reactions are automatically synced & scored live
                                 </span>
                               </div>
-                              <a
-                                href={detail.projectSubmission.channelPostUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="btn-base bg-blue-600 text-white hover:bg-blue-700 py-1.5 px-3 text-xs shrink-0 self-start sm:self-center"
-                              >
-                                View Post
-                              </a>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <a
+                                  href={detail.projectSubmission.channelPostUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="btn-base bg-blue-600 text-white hover:bg-blue-700 py-1.5 px-3 text-xs shrink-0 self-start sm:self-center"
+                                >
+                                  View Post
+                                </a>
+                                <button
+                                  onClick={() =>
+                                    unpublishMutation.mutate(detail.projectSubmission!.id)
+                                  }
+                                  disabled={unpublishMutation.isPending}
+                                  title="Delete post from @NilePixelTech and reset status"
+                                  className="btn-base bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 py-1.5 px-2.5 text-xs font-semibold flex items-center gap-1"
+                                >
+                                  <Trash2 size={12} />
+                                  Remove from Channel
+                                </button>
+                              </div>
                             </div>
                           )}
 
@@ -841,12 +904,12 @@ export const ParticipantsPage: React.FC = () => {
                             <button
                               onClick={() =>
                                 verifyMutation.mutate({
-                                  id: detail.projectSubmission!.id,
+                                  id: detail.id,
                                   status: 'rejected',
                                 })
                               }
                               disabled={verifyMutation.isPending}
-                              className="btn-base py-1.5 px-3 text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200"
+                              className="btn-base py-1.5 px-3 text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 flex items-center gap-1"
                             >
                               <X size={13} />
                               Reject
@@ -856,12 +919,12 @@ export const ParticipantsPage: React.FC = () => {
                                 <button
                                   onClick={() =>
                                     verifyMutation.mutate({
-                                      id: detail.projectSubmission!.id,
+                                      id: detail.id,
                                       status: 'verified',
                                     })
                                   }
                                   disabled={verifyMutation.isPending}
-                                  className="btn-base py-1.5 px-3 text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700"
+                                  className="btn-base py-1.5 px-3 text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-1"
                                 >
                                   <Check size={13} />
                                   Verify

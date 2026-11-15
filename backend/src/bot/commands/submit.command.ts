@@ -33,17 +33,24 @@ async function handleSubmit(ctx: Context) {
     // Extract payload after /submit
     const payload = fullText.replace(/^\/submit(@\w+)?/i, '').trim();
 
-    // If payload provided: format is Title | URL | Description
+    // If payload provided: format is Title | URL | Description | Optional Image URL
     if (payload.includes('|')) {
       const parts = payload.split('|').map((p) => p.trim());
       const title = parts[0] || 'StarLift Showcase Project';
       const projectUrl = parts[1] || '';
-      const description = parts.slice(2).join(' | ') || 'Innovative tech showcase entry for NilePixel StarLift.';
+      let description = parts[2] || 'Innovative tech showcase entry for NilePixel StarLift.';
+      let imageUrl: string | undefined = undefined;
+
+      if (parts.length >= 4 && parts[3].startsWith('http')) {
+        imageUrl = parts[3];
+      } else if (parts.length > 3) {
+        description = parts.slice(2).join(' | ');
+      }
 
       if (!projectUrl || !projectUrl.startsWith('http')) {
         await ctx.replyWithHTML(
           '⚠️ <b>Invalid URL format.</b> Please ensure your project URL starts with <code>https://</code> or <code>http://</code>.\n\n' +
-            '<b>Format:</b> <code>/submit Project Name | https://yourdemo.com | Short pitch</code>'
+            '<b>Format:</b> <code>/submit Project Name | https://yourdemo.com | Short pitch | Optional Image URL</code>'
         );
         return;
       }
@@ -53,16 +60,22 @@ async function handleSubmit(ctx: Context) {
         projectTitle: title,
         projectUrl,
         description,
+        imageUrl: imageUrl || null,
         status: 'pending',
       });
+
+      const imageNotice = submission.imageUrl
+        ? `🖼️ <b>Preview Image:</b> Attached\n`
+        : '';
 
       await ctx.replyWithHTML(
         `✅ <b>Project Submission Received!</b>\n\n` +
           `🏷️ <b>Title:</b> ${escapeHtml(submission.projectTitle || title)}\n` +
           `🔗 <b>Demo / Repo URL:</b> <code>${escapeHtml(submission.projectUrl)}</code>\n` +
+          `${imageNotice}` +
           `💡 <b>Pitch:</b>\n${escapeHtml(submission.description)}\n\n` +
           `⏳ <b>Status:</b> <b>Under Review</b>\n\n` +
-          `Our technical team will review your project. Once approved, it will be published directly to @NilePixelTech, and you will receive an instant notification here with your live post link!`,
+          `Our technical team will review your project. Once approved, it will be published directly to @NilePixelTech with automated reaction voting!`,
         Markup.inlineKeyboard([
           [
             Markup.button.callback('📊 My Stats & Rank', 'cmd_stats'),
@@ -162,3 +175,4 @@ export function registerSubmitCommand(bot: Telegraf) {
     }
   });
 }
+

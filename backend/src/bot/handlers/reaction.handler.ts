@@ -43,3 +43,4 @@ export function registerReactionHandler(bot: Telegraf) {
     return next();
   });
 }
+

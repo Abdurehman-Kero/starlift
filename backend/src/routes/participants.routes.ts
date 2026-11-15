@@ -4,6 +4,7 @@ import {
   listParticipants,
   getParticipantByTelegramId,
 } from '../services/participant.service';
+import { unpublishShowcaseFromChannel } from '../services/showcase.service';
 import { prisma } from '../database/client';
 
 const router = Router();
@@ -62,8 +63,10 @@ router.patch(
       return;
     }
 
-    const submission = await prisma.projectSubmission.findUnique({
-      where: { participantId: id },
+    const submission = await prisma.projectSubmission.findFirst({
+      where: {
+        OR: [{ participantId: id }, { id }],
+      },
     });
 
     if (!submission) {
@@ -71,8 +74,17 @@ router.patch(
       return;
     }
 
+    // If rejecting a published post, also remove it from the channel
+    if (status === 'rejected' && submission.channelMessageId) {
+      try {
+        await unpublishShowcaseFromChannel(submission.id, req.admin?.email);
+      } catch (unpubErr) {
+        // non-fatal
+      }
+    }
+
     const updated = await prisma.projectSubmission.update({
-      where: { participantId: id },
+      where: { id: submission.id },
       data: {
         status,
         verifiedAt: status !== 'pending' ? new Date() : null,
