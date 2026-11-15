@@ -109,7 +109,9 @@ async function renderStartScreen(ctx: Context) {
 
     let statusSection = '';
     if (submission.status === 'published' && submission.channelPostUrl) {
-      const reactions = submission.reactions.reduce((sum, r) => sum + r.reactionCount, 0);
+      const subReactions = submission.reactions?.reduce((sum, r) => sum + r.reactionCount, 0) || 0;
+      const directReactions = (submission.participant as any).reactions?.reduce((sum: number, r: any) => sum + r.reactionCount, 0) || 0;
+      const reactions = Math.max(subReactions, directReactions);
       statusSection =
         `• <b>Status:</b> Live on @NilePixelTech\n` +
         `• <b>Reactions:</b> ${reactions} community reactions\n`;

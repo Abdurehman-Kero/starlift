@@ -185,4 +185,73 @@ router.patch('/:id/status', async (req: AuthRequest, res: Response): Promise<voi
   res.json({ success: true, data: updated });
 });
 
+// PATCH /api/submissions/:id/reactions - Set reaction count directly for a submission
+router.patch('/:id/reactions', async (req: AuthRequest, res: Response): Promise<void> => {
+  const id = parseInt(req.params.id, 10);
+  const { reactionCount, source } = req.body as { reactionCount?: number; source?: string };
+
+  if (reactionCount === undefined || typeof reactionCount !== 'number' || reactionCount < 0) {
+    res.status(400).json({ success: false, message: 'Valid non-negative reactionCount is required' });
+    return;
+  }
+
+  const submission = await prisma.projectSubmission.findFirst({
+    where: {
+      OR: [{ id }, { participantId: id }],
+    },
+    include: { participant: true },
+  });
+
+  if (!submission) {
+    res.status(404).json({ success: false, message: 'Submission not found' });
+    return;
+  }
+
+  const existingReactions = await prisma.projectReaction.findMany({
+    where: {
+      OR: [{ submissionId: submission.id }, { participantId: submission.participantId }],
+    },
+    orderBy: { updatedAt: 'desc' },
+  });
+
+  const reaction = existingReactions.length > 0
+    ? await prisma.projectReaction.update({
+        where: { id: existingReactions[0].id },
+        data: {
+          submissionId: submission.id,
+          participantId: submission.participantId,
+          reactionCount,
+          source: source ?? 'manual_admin',
+          recordedBy: req.admin!.email,
+        },
+      })
+    : await prisma.projectReaction.create({
+        data: {
+          submissionId: submission.id,
+          participantId: submission.participantId,
+          reactionCount,
+          source: source ?? 'manual_admin',
+          recordedBy: req.admin!.email,
+        },
+      });
+
+  if (existingReactions.length > 1) {
+    const extraIds = existingReactions.slice(1).map((r) => r.id);
+    await prisma.projectReaction.deleteMany({
+      where: { id: { in: extraIds } },
+    });
+  }
+
+  await prisma.activityLog.create({
+    data: {
+      adminEmail: req.admin!.email,
+      participantId: submission.participantId,
+      action: 'UPDATE_REACTION_COUNT',
+      details: JSON.stringify({ submissionId: submission.id, reactionCount, source }),
+    },
+  });
+
+  res.json({ success: true, data: reaction });
+});
+
 export default router;

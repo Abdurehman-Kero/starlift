@@ -39,7 +39,9 @@ router.get('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
       invitationLinks: true,
       referralsMade: { include: { referred: true }, orderBy: { createdAt: 'desc' } },
       referralReceived: { include: { referrer: true } },
-      projectSubmission: true,
+      projectSubmission: {
+        include: { reactions: true },
+      },
       reactions: true,
     },
   });

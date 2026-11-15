@@ -44,6 +44,12 @@ interface ParticipantItem {
 }
 
 interface ParticipantDetail extends ParticipantItem {
+  reactions?: Array<{
+    id: number;
+    reactionCount: number;
+    source: string;
+    recordedAt: string;
+  }>;
   referralsMade: Array<{
     id: number;
     status: string;
@@ -73,6 +79,12 @@ interface ParticipantDetail extends ParticipantItem {
     publishedAt?: string | null;
     verifiedAt: string | null;
     verifiedBy: string | null;
+    reactions?: Array<{
+      id: number;
+      reactionCount: number;
+      source: string;
+      recordedAt: string;
+    }>;
   } | null;
 }
 
@@ -889,6 +901,30 @@ export const ParticipantsPage: React.FC = () => {
                                   Remove from Channel
                                 </button>
                               </div>
+                            </div>
+                          )}
+
+                          {/* Community Reactions Counter & Status */}
+                          {detail.projectSubmission.channelPostUrl && (
+                            <div className="p-3 bg-amber-50/70 border border-amber-200/80 rounded-lg flex items-center justify-between gap-3">
+                              <div>
+                                <span className="text-[11px] font-bold text-amber-900 block">
+                                  Community Reaction Score (30% Weight)
+                                </span>
+                                <span className="text-sm font-extrabold text-amber-800 font-mono">
+                                  {Math.max(
+                                    detail.reactions?.[0]?.reactionCount ?? 0,
+                                    detail.projectSubmission.reactions?.[0]?.reactionCount ?? 0
+                                  )}{' '}
+                                  Reactions
+                                </span>
+                                <span className="text-[10px] text-amber-700 block mt-0.5">
+                                  ⚡ Automatically updated whenever users react on the @NilePixelTech post
+                                </span>
+                              </div>
+                              <span className="badge-amber text-[10px] font-bold py-1 px-2 shrink-0">
+                                Live Synced
+                              </span>
                             </div>
                           )}
 

@@ -60,6 +60,7 @@ export async function getSubmissionByParticipantId(participantId: number) {
       reactions: true,
       participant: {
         include: {
+          reactions: true,
           invitationLinks: { where: { isActive: true }, take: 1 },
         },
       },
@@ -270,7 +271,7 @@ export async function unpublishShowcaseFromChannel(submissionId: number, adminEm
 }
 
 /**
- * Automatically updates reactions whenever Telegram fires a message_reaction_count event
+ * Automatically updates reactions whenever Telegram fires an aggregated message_reaction_count event.
  */
 export async function syncReactionCountForMessage(channelMessageId: number, totalCount: number) {
   const submission = await prisma.projectSubmission.findFirst({
@@ -283,16 +284,25 @@ export async function syncReactionCountForMessage(channelMessageId: number, tota
     return null;
   }
 
-  const existingReaction = await prisma.projectReaction.findFirst({
-    where: { submissionId: submission.id },
+  const existingReactions = await prisma.projectReaction.findMany({
+    where: {
+      OR: [
+        { submissionId: submission.id },
+        { participantId: submission.participantId },
+      ],
+    },
+    orderBy: { updatedAt: 'desc' },
   });
 
-  const reaction = existingReaction
+  const validCount = Math.max(0, totalCount);
+
+  const reaction = existingReactions.length > 0
     ? await prisma.projectReaction.update({
-        where: { id: existingReaction.id },
+        where: { id: existingReactions[0].id },
         data: {
+          submissionId: submission.id,
           participantId: submission.participantId,
-          reactionCount: totalCount,
+          reactionCount: validCount,
           source: 'telegram_channel_auto',
           recordedBy: 'system_auto_sync',
         },
@@ -301,14 +311,126 @@ export async function syncReactionCountForMessage(channelMessageId: number, tota
         data: {
           submissionId: submission.id,
           participantId: submission.participantId,
-          reactionCount: totalCount,
+          reactionCount: validCount,
           source: 'telegram_channel_auto',
           recordedBy: 'system_auto_sync',
         },
       });
 
+  if (existingReactions.length > 1) {
+    const extraIds = existingReactions.slice(1).map((r) => r.id);
+    await prisma.projectReaction.deleteMany({
+      where: { id: { in: extraIds } },
+    });
+  }
+
+  await prisma.activityLog.create({
+    data: {
+      participantId: submission.participantId,
+      action: 'AUTO_SYNC_REACTION_COUNT',
+      details: JSON.stringify({
+        channelMessageId,
+        totalCount: validCount,
+        submissionId: submission.id,
+        contestantName: submission.participant.firstName,
+      }),
+    },
+  });
+
   logger.info(
-    `✅ Auto-synced reactions for ${submission.participant.firstName}: ${totalCount} reactions (message #${channelMessageId})`
+    `✅ Auto-synced reaction count for ${submission.participant.firstName}: ${validCount} reactions (message #${channelMessageId})`
+  );
+
+  return reaction;
+}
+
+/**
+ * Automatically updates reactions whenever Telegram fires an individual user message_reaction event.
+ * Computes delta (new_reaction.length - old_reaction.length) and updates current reaction tally.
+ */
+export async function syncReactionDeltaForMessage(
+  channelMessageId: number,
+  delta: number,
+  userMeta?: { userId?: number; username?: string; firstName?: string }
+) {
+  if (delta === 0) {
+    logger.debug(`Reaction delta is 0 for message #${channelMessageId}; skipping update.`);
+    return null;
+  }
+
+  const submission = await prisma.projectSubmission.findFirst({
+    where: { channelMessageId },
+    include: { participant: true },
+  });
+
+  if (!submission) {
+    logger.debug(`No showcase submission linked to channelMessageId ${channelMessageId}`);
+    return null;
+  }
+
+  const existingReactions = await prisma.projectReaction.findMany({
+    where: {
+      OR: [
+        { submissionId: submission.id },
+        { participantId: submission.participantId },
+      ],
+    },
+    orderBy: { updatedAt: 'desc' },
+  });
+
+  const currentCount = existingReactions[0]?.reactionCount ?? 0;
+  const newCount = Math.max(0, currentCount + delta);
+  const recordedBy = userMeta?.username
+    ? `@${userMeta.username}`
+    : userMeta?.userId
+    ? `tg_${userMeta.userId}`
+    : 'system_auto_sync';
+
+  const reaction = existingReactions.length > 0
+    ? await prisma.projectReaction.update({
+        where: { id: existingReactions[0].id },
+        data: {
+          submissionId: submission.id,
+          participantId: submission.participantId,
+          reactionCount: newCount,
+          source: 'telegram_channel_auto',
+          recordedBy,
+        },
+      })
+    : await prisma.projectReaction.create({
+        data: {
+          submissionId: submission.id,
+          participantId: submission.participantId,
+          reactionCount: newCount,
+          source: 'telegram_channel_auto',
+          recordedBy,
+        },
+      });
+
+  if (existingReactions.length > 1) {
+    const extraIds = existingReactions.slice(1).map((r) => r.id);
+    await prisma.projectReaction.deleteMany({
+      where: { id: { in: extraIds } },
+    });
+  }
+
+  await prisma.activityLog.create({
+    data: {
+      participantId: submission.participantId,
+      action: 'AUTO_SYNC_REACTION_DELTA',
+      details: JSON.stringify({
+        channelMessageId,
+        delta,
+        newReactionCount: newCount,
+        submissionId: submission.id,
+        userMeta,
+        contestantName: submission.participant.firstName,
+      }),
+    },
+  });
+
+  logger.info(
+    `✅ Auto-synced reaction delta (${delta > 0 ? '+' : ''}${delta}) for ${submission.participant.firstName}: new total ${newCount} reactions (message #${channelMessageId})`
   );
 
   return reaction;

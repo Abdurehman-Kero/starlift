@@ -49,18 +49,19 @@ router.patch(
       });
     }
 
-    const existingReaction = await prisma.projectReaction.findFirst({
+    const existingReactions = await prisma.projectReaction.findMany({
       where: {
         OR: [
           { submissionId: submission.id },
           { participantId: participant.id },
         ],
       },
+      orderBy: { updatedAt: 'desc' },
     });
 
-    const reaction = existingReaction
+    const reaction = existingReactions.length > 0
       ? await prisma.projectReaction.update({
-          where: { id: existingReaction.id },
+          where: { id: existingReactions[0].id },
           data: {
             submissionId: submission.id,
             participantId: participant.id,
@@ -78,6 +79,13 @@ router.patch(
             recordedBy: req.admin!.email,
           },
         });
+
+    if (existingReactions.length > 1) {
+      const extraIds = existingReactions.slice(1).map((r) => r.id);
+      await prisma.projectReaction.deleteMany({
+        where: { id: { in: extraIds } },
+      });
+    }
 
     await prisma.activityLog.create({
       data: {

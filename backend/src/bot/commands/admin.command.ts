@@ -352,4 +352,132 @@ export function registerAdminCommand(bot: Telegraf) {
       await ctx.answerCbQuery('Failed to remove from channel.', { show_alert: true });
     }
   });
+
+  // 6. /reactions or /setreactions <code_or_id> <count> - Manually set reaction count directly from Telegram admin group
+  bot.command(['reactions', 'setreactions'], async (ctx: Context) => {
+    const authorized = await isAuthorizedAdmin(ctx);
+    if (!authorized) {
+      await ctx.reply('⚠️ Unauthorized: This command can only be used by admins in the Administrator Group.');
+      return;
+    }
+
+    const message = ctx.message;
+    let text = '';
+    if (message && 'text' in message) {
+      text = message.text.trim();
+    }
+
+    const parts = text.split(/\s+/);
+    if (parts.length < 3) {
+      await ctx.replyWithHTML(
+        `<b>Usage:</b> <code>/reactions &lt;referral_code_or_id&gt; &lt;count&gt;</code>\n\n` +
+          `<b>Example:</b> <code>/reactions 8CFA1233E1 25</code> or <code>/reactions 1 50</code>`
+      );
+      return;
+    }
+
+    const identifier = parts[1].trim();
+    const count = parseInt(parts[2].trim(), 10);
+
+    if (isNaN(count) || count < 0) {
+      await ctx.reply('❌ Please specify a valid non-negative reaction count.');
+      return;
+    }
+
+    try {
+      // Find participant by referral code or by participant ID
+      const numId = parseInt(identifier, 10);
+      const participant = await prisma.participant.findFirst({
+        where: {
+          OR: [
+            { referralCode: identifier.toUpperCase() },
+            ...(isNaN(numId) ? [] : [{ id: numId }]),
+          ],
+        },
+        include: { projectSubmission: true },
+      });
+
+      if (!participant) {
+        await ctx.reply(`❌ Contestant not found for identifier "${identifier}".`);
+        return;
+      }
+
+      let submission = participant.projectSubmission;
+      if (!submission) {
+        submission = await prisma.projectSubmission.create({
+          data: {
+            participantId: participant.id,
+            projectUrl: 'https://t.me/NilePixelTech',
+            description: 'Official StarLift showcase project',
+            status: 'verified',
+          },
+        });
+      }
+
+      const existingReactions = await prisma.projectReaction.findMany({
+        where: {
+          OR: [
+            { submissionId: submission.id },
+            { participantId: participant.id },
+          ],
+        },
+        orderBy: { updatedAt: 'desc' },
+      });
+
+      const adminName = ctx.from?.username ? `@${ctx.from.username}` : ctx.from?.first_name || 'Admin';
+
+      if (existingReactions.length > 0) {
+        await prisma.projectReaction.update({
+          where: { id: existingReactions[0].id },
+          data: {
+            submissionId: submission.id,
+            participantId: participant.id,
+            reactionCount: count,
+            source: 'telegram_admin_cmd',
+            recordedBy: adminName,
+          },
+        });
+
+        if (existingReactions.length > 1) {
+          const extraIds = existingReactions.slice(1).map((r) => r.id);
+          await prisma.projectReaction.deleteMany({
+            where: { id: { in: extraIds } },
+          });
+        }
+      } else {
+        await prisma.projectReaction.create({
+          data: {
+            submissionId: submission.id,
+            participantId: participant.id,
+            reactionCount: count,
+            source: 'telegram_admin_cmd',
+            recordedBy: adminName,
+          },
+        });
+      }
+
+      await prisma.activityLog.create({
+        data: {
+          adminEmail: adminName,
+          participantId: participant.id,
+          action: 'UPDATE_REACTION_COUNT_VIA_TG',
+          details: JSON.stringify({ count, identifier }),
+        },
+      });
+
+      const contestantName = escapeHtml(participant.firstName);
+      const contestantCode = escapeHtml(participant.referralCode);
+
+      await ctx.replyWithHTML(
+        `✅ <b>Reactions Updated Successfully</b>\n\n` +
+          `• <b>Contestant:</b> ${contestantName}\n` +
+          `• <b>Referral Code:</b> <code>${contestantCode}</code>\n` +
+          `• <b>New Reaction Count:</b> <b>${count}</b> reactions\n\n` +
+          `Leaderboard rankings and composite scores have been recalculated.`
+      );
+    } catch (err) {
+      logger.error('Error updating reactions via command:', { err });
+      await ctx.reply('❌ An error occurred while updating reaction count.');
+    }
+  });
 }
