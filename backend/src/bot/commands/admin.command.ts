@@ -6,6 +6,7 @@ import {
   publishShowcaseToChannel,
   unpublishShowcaseFromChannel,
   getAdminTelegramChatIds,
+  notifyContestantOfAdjustmentRequired,
 } from '../../services/showcase.service';
 import logger from '../../config/logger';
 
@@ -18,15 +19,26 @@ function escapeHtml(text: string): string {
 
 async function isAuthorizedAdmin(ctx: Context): Promise<boolean> {
   const chatId = ctx.chat?.id ? String(ctx.chat.id) : '';
-  const userId = ctx.from?.id ? String(ctx.from.id) : '';
+  const fromId = ctx.from?.id ? ctx.from.id : null;
+  if (!fromId || !chatId) return false;
 
   const adminIds = await getAdminTelegramChatIds();
-  return (
-    adminIds.includes(chatId) ||
-    adminIds.includes(userId) ||
-    userId === '1818017284' ||
-    userId === '7448389445'
-  );
+
+  // 1. The action MUST be triggered from inside the registered Administrator Group (negative group ID)!
+  const isRegisteredAdminGroup = chatId.startsWith('-') && adminIds.includes(chatId);
+  if (!isRegisteredAdminGroup) {
+    return false;
+  }
+
+  // 2. The user clicking MUST be a member or administrator of this Administrator Group!
+  try {
+    const member = await ctx.telegram.getChatMember(ctx.chat!.id, fromId);
+    const validStatuses = ['creator', 'administrator', 'member'];
+    return validStatuses.includes(member.status);
+  } catch (err) {
+    logger.warn(`Could not verify group membership for user ${fromId} in ${chatId}:`, { err });
+    return false;
+  }
 }
 
 export function registerAdminCommand(bot: Telegraf) {
@@ -183,9 +195,10 @@ export function registerAdminCommand(bot: Telegraf) {
 
     const authorized = await isAuthorizedAdmin(ctx);
     if (!authorized) {
-      await ctx.answerCbQuery('⚠️ Unauthorized: You are not registered as an admin.', {
-        show_alert: true,
-      });
+      await ctx.answerCbQuery(
+        '⚠️ Unauthorized: Only members of the StarLift Administrator Group can approve and publish submissions.',
+        { show_alert: true }
+      );
       return;
     }
 
@@ -238,9 +251,10 @@ export function registerAdminCommand(bot: Telegraf) {
 
     const authorized = await isAuthorizedAdmin(ctx);
     if (!authorized) {
-      await ctx.answerCbQuery('⚠️ Unauthorized: You are not registered as an admin.', {
-        show_alert: true,
-      });
+      await ctx.answerCbQuery(
+        '⚠️ Unauthorized: Only members of the StarLift Administrator Group can ignore or approve submissions.',
+        { show_alert: true }
+      );
       return;
     }
 
@@ -257,7 +271,10 @@ export function registerAdminCommand(bot: Telegraf) {
         include: { participant: true },
       });
 
-      await ctx.answerCbQuery('Submission ignored / rejected.');
+      // Send immediate, constructive DM to the contestant informing them to adjust and resubmit!
+      await notifyContestantOfAdjustmentRequired(submission.id);
+
+      await ctx.answerCbQuery('Submission ignored. Contestant has been notified to adjust and resubmit.');
 
       const title = escapeHtml(submission.projectTitle || 'Showcase Project');
       const author = escapeHtml(submission.participant.firstName);
@@ -266,7 +283,8 @@ export function registerAdminCommand(bot: Telegraf) {
         `❌ <b>SUBMISSION REJECTED / IGNORED</b>\n\n` +
         `🏷️ <b>Title:</b> ${title}\n` +
         `👨‍💻 <b>Contestant:</b> ${author}\n\n` +
-        `<i>Action taken by ${adminName} at ${new Date().toLocaleTimeString()}</i>`;
+        `<i>Action taken by ${adminName} at ${new Date().toLocaleTimeString()}</i>\n` +
+        `<i>📩 A direct message was sent to ${author} requesting adjustments and resubmission.</i>`;
 
       const keyboard = Markup.inlineKeyboard([
         [Markup.button.callback('🔄 Reconsider & Publish to Channel', `sub_pub:${submissionId}`)],
@@ -296,9 +314,10 @@ export function registerAdminCommand(bot: Telegraf) {
 
     const authorized = await isAuthorizedAdmin(ctx);
     if (!authorized) {
-      await ctx.answerCbQuery('⚠️ Unauthorized: You are not registered as an admin.', {
-        show_alert: true,
-      });
+      await ctx.answerCbQuery(
+        '⚠️ Unauthorized: Only members of the StarLift Administrator Group can approve and publish submissions.',
+        { show_alert: true }
+      );
       return;
     }
 

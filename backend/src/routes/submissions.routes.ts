@@ -5,6 +5,7 @@ import {
   publishShowcaseToChannel,
   unpublishShowcaseFromChannel,
   getSubmissionByParticipantId,
+  notifyContestantOfAdjustmentRequired,
 } from '../services/showcase.service';
 import { bot } from '../bot/bot';
 import { prisma } from '../database/client';
@@ -156,11 +157,19 @@ router.patch('/:id/status', async (req: AuthRequest, res: Response): Promise<voi
   }
 
   // If rejected and was published, also remove from channel
-  if (status === 'rejected' && submission.channelMessageId) {
+  if (status === 'rejected') {
+    if (submission.channelMessageId) {
+      try {
+        await unpublishShowcaseFromChannel(submission.id, req.admin?.email);
+      } catch (unpubErr) {
+        logger.warn('Failed to unpublish rejected submission from channel:', { unpubErr });
+      }
+    }
+    // Notify contestant via DM to adjust specifications and resubmit
     try {
-      await unpublishShowcaseFromChannel(submission.id, req.admin?.email);
-    } catch (unpubErr) {
-      logger.warn('Failed to unpublish rejected submission from channel:', { unpubErr });
+      await notifyContestantOfAdjustmentRequired(submission.id);
+    } catch (notifyErr) {
+      logger.warn('Failed to notify contestant of adjustment required:', { notifyErr });
     }
   }
 

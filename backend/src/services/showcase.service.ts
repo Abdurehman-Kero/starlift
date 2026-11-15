@@ -422,3 +422,48 @@ export async function notifyAdminsOfNewSubmission(submissionId: number): Promise
   }
 }
 
+/**
+ * Sends a constructive DM to the contestant when their project is ignored/rejected,
+ * informing them to adjust necessary specifications and resubmit.
+ */
+export async function notifyContestantOfAdjustmentRequired(submissionId: number): Promise<void> {
+  const submission = await prisma.projectSubmission.findUnique({
+    where: { id: submissionId },
+    include: { participant: true },
+  });
+
+  if (!submission) return;
+
+  try {
+    const contestantTelegramId = submission.participant.telegramId.toString();
+    const contestantName = escapeHtml(submission.participant.firstName);
+    const projectTitle = escapeHtml(submission.projectTitle || 'Your Project');
+
+    const dmMessage =
+      `⚠️ <b>Project Specification Update Required</b>\n\n` +
+      `Hello ${contestantName}!\n\n` +
+      `Our review committee in the StarLift Administrator Group has reviewed your submission for <b>"${projectTitle}"</b>.\n\n` +
+      `ℹ️ <b>Adjustments Needed:</b>\n` +
+      `Your project showcase details require adjustments before it can be published to @NilePixelTech (for example: refining your pitch description, ensuring your demo link is publicly accessible, or attaching a clear project screenshot/banner).\n\n` +
+      `🔄 <b>How to Resubmit:</b>\n` +
+      `You can update and resubmit your project specification right now! Tap the button below or send <code>/submit</code> to make the adjustments.\n\n` +
+      `💬 If you need guidance, feel free to contact our support team at @NilePixelSupportBot!`;
+
+    await bot.telegram.sendMessage(contestantTelegramId, dmMessage, {
+      parse_mode: 'HTML',
+      reply_markup: Markup.inlineKeyboard([
+        [Markup.button.callback('💡 Update & Resubmit Specification', 'cmd_submit')],
+        [Markup.button.url('💬 Contact Support (@NilePixelSupportBot)', 'https://t.me/NilePixelSupportBot')],
+        [Markup.button.callback('🏠 Main Menu', 'cmd_start')],
+      ]).reply_markup,
+    });
+
+    logger.info(
+      `Successfully sent adjustment DM to contestant ${contestantTelegramId} for submission #${submission.id}`
+    );
+  } catch (dmErr) {
+    logger.warn('Failed to send adjustment DM to contestant:', { dmErr });
+  }
+}
+
+
