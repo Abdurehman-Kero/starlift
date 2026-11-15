@@ -101,9 +101,6 @@ export function registerStartCommand(bot: Telegraf) {
           [
             Markup.button.url('📢 Open Channel (@NilePixelTech)', 'https://t.me/NilePixelTech'),
           ],
-          [
-            Markup.button.url('💬 Technical Support (@NilePixelSupportBot)', 'https://t.me/NilePixelSupportBot'),
-          ],
         ])
       );
     } catch (error) {
@@ -123,6 +120,9 @@ export function registerStartCommand(bot: Telegraf) {
           `Hello ${name}! Manage your StarLift challenge entry, track your rank, and invite members to climb the leaderboard:`,
         Markup.inlineKeyboard([
           [
+            Markup.button.callback('💡 Submit Showcase Project', 'cmd_submit'),
+          ],
+          [
             Markup.button.callback('🔗 Get Invite Link', 'cmd_mylink'),
             Markup.button.callback('📊 My Stats & Rank', 'cmd_stats'),
           ],
@@ -132,9 +132,6 @@ export function registerStartCommand(bot: Telegraf) {
           ],
           [
             Markup.button.url('📢 Open Channel (@NilePixelTech)', 'https://t.me/NilePixelTech'),
-          ],
-          [
-            Markup.button.url('💬 Technical Support (@NilePixelSupportBot)', 'https://t.me/NilePixelSupportBot'),
           ],
         ])
       );

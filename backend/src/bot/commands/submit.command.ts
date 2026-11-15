@@ -86,11 +86,19 @@ async function handleSubmit(ctx: Context) {
           `${imageNotice}` +
           `💡 <b>Pitch:</b>\n${escapeHtml(submission.description)}\n\n` +
           `⏳ <b>Status:</b> <b>Under Review</b>\n\n` +
-          `Our technical team has been notified. Once approved, it will be published directly to @NilePixelTech with automated reaction voting!`,
+          `🚀 <b>YOUR NEXT STEPS RIGHT NOW:</b>\n` +
+          `1. 🤝 <b>Earn Referral Points (70% Weight):</b>\n` +
+          `   Get your personal invite link below and start inviting friends to @NilePixelTech!\n` +
+          `2. ❤️ <b>Channel Showcase (30% Weight):</b>\n` +
+          `   Our team is reviewing your project. Once published to @NilePixelTech, you'll receive an instant notification here with your live post link!`,
         Markup.inlineKeyboard([
           [
+            Markup.button.callback('🔗 Get My Invite Link', 'cmd_mylink'),
             Markup.button.callback('📊 My Stats & Rank', 'cmd_stats'),
-            Markup.button.callback('🔗 My Invite Link', 'cmd_mylink'),
+          ],
+          [
+            Markup.button.callback('🏆 Leaderboard', 'cmd_leaderboard'),
+            Markup.button.callback('🏠 Main Menu', 'cmd_start'),
           ],
         ])
       );
@@ -256,11 +264,19 @@ export function registerSubmitCommand(bot: Telegraf) {
             `🖼️ <b>Screenshot/Banner:</b> Attached\n` +
             `💡 <b>Pitch:</b>\n${escapeHtml(submission.description)}\n\n` +
             `⏳ <b>Status:</b> <b>Under Review</b>\n\n` +
-            `Our technical team has been notified. Once approved, it will be published directly to @NilePixelTech with automated reaction voting!`,
+            `🚀 <b>YOUR NEXT STEPS RIGHT NOW:</b>\n` +
+            `1. 🤝 <b>Earn Referral Points (70% Weight):</b>\n` +
+            `   Get your personal invite link below and start inviting friends to @NilePixelTech!\n` +
+            `2. ❤️ <b>Channel Showcase (30% Weight):</b>\n` +
+            `   Our team is reviewing your project. Once published to @NilePixelTech, you'll receive an instant notification here with your live post link!`,
           Markup.inlineKeyboard([
             [
+              Markup.button.callback('🔗 Get My Invite Link', 'cmd_mylink'),
               Markup.button.callback('📊 My Stats & Rank', 'cmd_stats'),
-              Markup.button.callback('🔗 My Invite Link', 'cmd_mylink'),
+            ],
+            [
+              Markup.button.callback('🏆 Leaderboard', 'cmd_leaderboard'),
+              Markup.button.callback('🏠 Main Menu', 'cmd_start'),
             ],
           ])
         );
