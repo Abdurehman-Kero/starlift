@@ -72,12 +72,38 @@ router.post('/:participantId', async (req: AuthRequest, res: Response): Promise<
     return;
   }
 
+  if (projectTitle && (projectTitle.trim().length < 2 || projectTitle.trim().length > 60)) {
+    res.status(400).json({
+      success: false,
+      message: 'Project title must be between 2 and 60 characters',
+    });
+    return;
+  }
+
+  const trimmedUrl = projectUrl.trim();
+  if (trimmedUrl.length < 8 || trimmedUrl.length > 250 || /\s/.test(trimmedUrl)) {
+    res.status(400).json({
+      success: false,
+      message: 'Project URL must be a valid link between 8 and 250 characters without spaces',
+    });
+    return;
+  }
+
+  const trimmedDescription = description.trim();
+  if (trimmedDescription.length < 20 || trimmedDescription.length > 400) {
+    res.status(400).json({
+      success: false,
+      message: 'Description must be between 20 and 400 characters (1–3 sentences)',
+    });
+    return;
+  }
+
   try {
     const submission = await createOrUpdateSubmission({
       participantId,
-      projectTitle,
-      projectUrl,
-      description,
+      projectTitle: projectTitle ? projectTitle.trim() : undefined,
+      projectUrl: trimmedUrl,
+      description: trimmedDescription,
       imageUrl: imageUrl || null,
       status: status ?? 'verified',
     });

@@ -87,7 +87,7 @@ async function renderStartScreen(ctx: Context) {
         `To receive your personal channel invite link and compete on the leaderboard, please submit your project specification or developer portfolio.\n\n` +
         `━━━━━━━━━━━━━━━━━━━━━━\n` +
         `<b>Step 1 of 4: Project Title</b>\n` +
-        `Please reply with your project title (or your name for a developer portfolio):\n` +
+        `Please reply with your project title or developer portfolio name (2–60 characters):\n` +
         `(e.g., <b>NilePay Gateway</b>)`;
 
       await ctx.replyWithHTML(

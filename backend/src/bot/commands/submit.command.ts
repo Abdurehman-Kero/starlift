@@ -175,7 +175,7 @@ export async function startSubmissionWizard(
   await ctx.replyWithHTML(
     `<b>Project Submission — Step 1 of 4: Title</b>\n\n` +
       `${photoNotice}` +
-      `Please reply with your project title (or your name for a developer portfolio):\n` +
+      `Please reply with your project title or developer portfolio name (2–60 characters):\n` +
       `(e.g., <b>NilePay Gateway</b>)`,
     Markup.inlineKeyboard([
       [Markup.button.callback('Cancel', 'cancel_submission')],
@@ -324,10 +324,18 @@ export function registerSubmitCommand(bot: Telegraf) {
     const participant = await getParticipantByTelegramId(telegramId);
     if (!participant) return next();
 
-    // STEP 1: Project Title
+    // STEP 1: Project Title (2 - 60 chars)
     if (session.step === 'TITLE') {
       if (text.length < 2) {
-        await ctx.reply('Please provide a valid project title:');
+        await ctx.replyWithHTML('⚠️ Please provide a valid project title of at least 2 characters:');
+        return;
+      }
+
+      if (text.length > 60) {
+        await ctx.replyWithHTML(
+          `⚠️ <b>Title is too long (${text.length}/60 characters).</b>\n\n` +
+            `Please send a concise project title (e.g., <b>NilePay Gateway</b>):`
+        );
         return;
       }
 
@@ -346,16 +354,34 @@ export function registerSubmitCommand(bot: Telegraf) {
       return;
     }
 
-    // STEP 2: Demo / Portfolio URL
+    // STEP 2: Demo / Portfolio URL (8 - 250 chars, valid URL format)
     if (session.step === 'URL') {
+      if (/\s/.test(text)) {
+        await ctx.replyWithHTML(
+          '⚠️ <b>Invalid link format:</b> URLs cannot contain spaces.\n\n' +
+            'Please send a direct link starting with <code>https://</code> or <code>http://</code> (e.g., <code>https://github.com/myrepo</code>):'
+        );
+        return;
+      }
+
       let url = text;
       if (!url.startsWith('http://') && !url.startsWith('https://')) {
         if (url.includes('.')) url = `https://${url}`;
       }
 
-      if (!url.startsWith('http')) {
+      const urlPattern = /^https?:\/\/[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(:\d+)?(\/.*)?$/;
+      if (!urlPattern.test(url) || url.length < 8) {
         await ctx.replyWithHTML(
-          'Please send a valid link starting with <code>https://</code> or <code>http://</code> (e.g. <code>https://yourdemo.com</code>):'
+          '⚠️ <b>Invalid link format.</b>\n\n' +
+            'Please send a valid URL starting with <code>https://</code> or <code>http://</code> (e.g., <code>https://yourdemo.com</code> or <code>https://github.com/name/repo</code>):'
+        );
+        return;
+      }
+
+      if (url.length > 250) {
+        await ctx.replyWithHTML(
+          `⚠️ <b>Link is too long (${url.length}/250 characters).</b>\n\n` +
+            'Please send a shorter direct URL:'
         );
         return;
       }
@@ -366,7 +392,7 @@ export function registerSubmitCommand(bot: Telegraf) {
       await ctx.replyWithHTML(
         `<b>Demo URL Saved:</b> <code>${escapeHtml(session.projectUrl)}</code>\n\n` +
           `<b>Step 3 of 4: Short Pitch / Description</b>\n` +
-          `Please write a short description (1–3 sentences) explaining what your project does:`,
+          `Please write a short description (20–400 characters, 1–3 sentences) explaining what your project does:`,
         Markup.inlineKeyboard([
           [Markup.button.callback('Cancel', 'cancel_submission')],
         ])
@@ -374,10 +400,21 @@ export function registerSubmitCommand(bot: Telegraf) {
       return;
     }
 
-    // STEP 3: Description / Pitch
+    // STEP 3: Description / Pitch (20 - 400 chars)
     if (session.step === 'DESCRIPTION') {
-      if (text.length < 5) {
-        await ctx.reply('Please provide a short description of at least a few words:');
+      if (text.length < 20) {
+        await ctx.replyWithHTML(
+          `⚠️ <b>Description is too short (${text.length} characters).</b>\n\n` +
+            `Please write at least 1–2 complete sentences explaining what your project does (minimum 20 characters):`
+        );
+        return;
+      }
+
+      if (text.length > 400) {
+        await ctx.replyWithHTML(
+          `⚠️ <b>Description is too long (${text.length}/400 characters).</b>\n\n` +
+            `Please summarize your project in 1–3 concise sentences (max 400 characters) so it fits cleanly on the Telegram showcase card:`
+        );
         return;
       }
 
@@ -393,7 +430,7 @@ export function registerSubmitCommand(bot: Telegraf) {
       await ctx.replyWithHTML(
         `<b>Description Saved.</b>\n\n` +
           `<b>Step 4 of 4: Project Screenshot or Banner</b>\n` +
-          `<i>(Strongly recommended — projects with an image receive significantly higher community votes)</i>\n\n` +
+          `<i>(Strongly recommended — projects with a screenshot stand out on the channel)</i>\n\n` +
           `Please send a screenshot or banner photo of your project now, or tap <b>Skip Image</b> to proceed without one:`,
         Markup.inlineKeyboard([
           [Markup.button.callback('Skip Image', 'skip_submission_image')],
