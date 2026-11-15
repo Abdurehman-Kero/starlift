@@ -97,28 +97,27 @@ export async function publishShowcaseToChannel(submissionId: number, adminEmail?
   const inviteLink = submission.participant.invitationLinks[0]?.inviteLink;
 
   const authorLine = contestantHandle
-    ? `👨‍💻 <b>Creator:</b> ${contestantName} (${contestantHandle})`
-    : `👨‍💻 <b>Creator:</b> ${contestantName}`;
+    ? `<b>Creator:</b> ${contestantName} (${contestantHandle})`
+    : `<b>Creator:</b> ${contestantName}`;
 
   const linkActionText = inviteLink
-    ? `🤝 <b>Support ${contestantName}:</b>\nJoin via their personal link:\n<code>${inviteLink}</code>`
-    : `🤝 <b>Support ${contestantName}</b> in the StarLift Showcase!`;
+    ? `<b>Support ${contestantName}:</b>\nJoin @NilePixelTech via their personal invite link:\n<code>${inviteLink}</code>`
+    : `<b>Support ${contestantName}</b> in the NilePixel StarLift Showcase!`;
 
-  // Senior-designer formatted clean Telegram card
+  // Clean, human-written Telegram card with clear spacing and no excessive emojis
   const postCard =
-    `🌟 <b>STARLIFT PROJECT SHOWCASE</b>\n` +
-    `🚀 <b>${title}</b>\n\n` +
-    `${authorLine}\n` +
-    `🔑 <b>Code:</b> <code>${referralCode}</code>\n` +
-    `🔗 <b>Live Demo / Repo:</b> <a href="${projectUrl}">${projectUrl}</a>\n\n` +
-    `💡 <b>About the Project:</b>\n` +
+    `<b>StarLift Project Showcase</b>\n\n` +
+    `<b>${title}</b>\n\n` +
+    `• ${authorLine}\n` +
+    `• <b>Referral Code:</b> <code>${referralCode}</code>\n` +
+    `• <b>Live Demo / Repo:</b> <a href="${projectUrl}">${projectUrl}</a>\n\n` +
+    `<b>About the Project:</b>\n` +
     `${description}\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `${linkActionText}\n\n` +
+    `React with emojis below to support this project!\n\n` +
     `━━━━━━━━━━━━━━━━━━━━━━\n` +
-    `🗳️ <b>COMMUNITY VOTING (30% Score Weight):</b>\n` +
-    `React below with <b>❤️, 🔥, 🚀, 👍, 👏</b> to cast your vote!\n\n` +
-    `${linkActionText}\n` +
-    `━━━━━━━━━━━━━━━━━━━━━━\n` +
-    `<i>NilePixel StarLift Challenge (Nov 15 – 30, 2026)</i>`;
+    `<i>NilePixel StarLift Challenge (Nov 16 – 30, 2026)</i>`;
 
   let sentMessage: { message_id: number };
 
@@ -188,14 +187,14 @@ export async function publishShowcaseToChannel(submissionId: number, adminEmail?
   // Notify contestant via private DM from bot
   try {
     const dmText =
-      `🎉 <b>Congratulations, ${contestantName}!</b>\n\n` +
-      `Your project <b>${title}</b> has officially been published on the official channel!\n\n` +
-      `📢 <b>Showcase Post Link:</b>\n` +
+      `<b>Congratulations, ${contestantName}!</b>\n\n` +
+      `Your project <b>${title}</b> has officially been published on @NilePixelTech.\n\n` +
+      `• <b>Showcase Post Link:</b>\n` +
       `<a href="${postUrl}">${postUrl}</a>\n\n` +
-      `🔥 <b>What to do next:</b>\n` +
-      `• Share this post with your friends, communities, and tech groups.\n` +
-      `• Ask everyone to react with emojis (❤️, 🔥, 🚀, 👍) to boost your <b>30% Reaction Score</b>.\n` +
-      `• Track your live standings anytime with /stats!`;
+      `<b>What to do next:</b>\n` +
+      `• Share your post and personal invite link with friends and developer groups.\n` +
+      `• Encourage supporters to join the channel and react to your showcase post.\n` +
+      `• Track your confirmed referrals anytime using /stats!`;
 
     await bot.telegram.sendMessage(participant.telegramId.toString(), dmText, {
       parse_mode: 'HTML',
