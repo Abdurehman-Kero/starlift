@@ -32,21 +32,29 @@ router.patch(
       include: { projectSubmission: true },
     });
 
-    if (!participant || !participant.projectSubmission) {
-      res
-        .status(404)
-        .json({ success: false, message: 'Participant or project submission not found' });
+    if (!participant) {
+      res.status(404).json({ success: false, message: 'Participant not found' });
       return;
+    }
+
+    let submission = participant.projectSubmission;
+    if (!submission) {
+      submission = await prisma.projectSubmission.create({
+        data: {
+          participantId: participant.id,
+          projectUrl: 'https://t.me/NilePixelTech',
+          description: 'Official StarLift showcase project',
+          status: 'verified',
+        },
+      });
     }
 
     const reaction = await prisma.projectReaction.upsert({
       where: {
-        // Use a compound unique-ish match via findFirst then create/update
-        // The model doesn't have a unique constraint on submissionId alone, so we find first
         id: (
           await prisma.projectReaction.findFirst({
             where: {
-              submissionId: participant.projectSubmission.id,
+              submissionId: submission.id,
               source: source ?? 'manual',
             },
           })
@@ -54,7 +62,7 @@ router.patch(
       },
       update: { reactionCount, recordedBy: req.admin!.email },
       create: {
-        submissionId: participant.projectSubmission.id,
+        submissionId: submission.id,
         participantId,
         reactionCount,
         source: source ?? 'manual',
