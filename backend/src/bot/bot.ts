@@ -1,4 +1,4 @@
-import { Telegraf } from 'telegraf';
+import { Telegraf, Context } from 'telegraf';
 import { Application } from 'express';
 import { env, isBotConfigured } from '../config/env';
 import logger from '../config/logger';
@@ -12,11 +12,27 @@ import { syncBotProfileToTelegram } from '../services/botProfile.service';
 
 export let isBotRunning = false;
 export let lastBotError: string | null = null;
+let isAttemptingLaunch = false;
+let supervisorInterval: NodeJS.Timeout | null = null;
 
 // Initialize Telegraf with token or dummy fallback to avoid constructor throw
 const token = env.BOT_TOKEN || '000000000:dummy_token_until_env_configured';
 export const bot = new Telegraf(token, {
   handlerTimeout: 90000,
+});
+
+// Telegraf global error catcher to prevent unhandled rejection crashes
+bot.catch((err: unknown, ctx: Context) => {
+  const errMsg = err instanceof Error ? err.message : String(err);
+  logger.error('Telegraf unhandled error in update:', {
+    error: errMsg,
+    updateType: ctx?.updateType,
+  });
+
+  if (errMsg.includes('409') || errMsg.includes('Conflict')) {
+    isBotRunning = false;
+    lastBotError = errMsg;
+  }
 });
 
 // Register commands & handlers
@@ -27,45 +43,54 @@ registerLeaderboardCommand(bot);
 registerHelpCommand(bot);
 registerChatMemberHandler(bot);
 
-async function launchWithRetry(retries = 5, delayMs = 3000): Promise<void> {
-  for (let attempt = 1; attempt <= retries; attempt++) {
-    try {
-      try {
-        await bot.telegram.deleteWebhook({ drop_pending_updates: false });
-      } catch (webhookErr) {
-        // deleteWebhook is non-critical for polling mode
-        logger.debug('deleteWebhook notice (non-fatal):', { webhookErr });
-      }
-
-      await bot.launch({
-        allowedUpdates: ['message', 'chat_member', 'callback_query'],
-      });
-
-      isBotRunning = true;
-      lastBotError = null;
-      logger.info('Bot running in polling mode');
-
-      // Automatically sync bot profile, description, and commands to Telegram API
-      syncBotProfileToTelegram(bot).catch((syncErr) => {
-        logger.debug('Initial bot profile sync notice:', { syncErr });
-      });
-
-      return;
-    } catch (err: unknown) {
-      isBotRunning = false;
-      lastBotError =
-        err instanceof Error ? err.message : 'Failed to connect to Telegram API';
-      logger.warn(
-        `⚠️ [BOT] Telegram connection attempt ${attempt}/${retries} failed: ${lastBotError}. Retrying in ${delayMs / 1000}s…`
-      );
-
-      if (attempt < retries) {
-        await new Promise((resolve) => setTimeout(resolve, delayMs));
-      }
-    }
+/**
+ * Single launch attempt with cleanup. Safe to call multiple times.
+ */
+export async function launchBotOnce(): Promise<boolean> {
+  if (isBotRunning || isAttemptingLaunch) return isBotRunning;
+  if (!isBotConfigured()) {
+    isBotRunning = false;
+    lastBotError = 'BOT_TOKEN is missing or contains placeholder in .env';
+    return false;
   }
 
-  logger.error('⚠️ [BOT] All Telegram connection attempts exhausted. Please check your internet connection or proxy to api.telegram.org.');
+  isAttemptingLaunch = true;
+  try {
+    try {
+      bot.stop();
+    } catch {
+      // non-fatal stop
+    }
+
+    try {
+      await bot.telegram.deleteWebhook({ drop_pending_updates: false });
+    } catch (webhookErr) {
+      logger.debug('deleteWebhook notice (non-fatal):', { webhookErr });
+    }
+
+    await bot.launch({
+      allowedUpdates: ['message', 'chat_member', 'callback_query'],
+    });
+
+    isBotRunning = true;
+    lastBotError = null;
+    logger.info('✅ Telegram bot successfully running in polling mode');
+
+    // Automatically sync bot profile, description, and commands to Telegram API
+    syncBotProfileToTelegram(bot).catch((syncErr) => {
+      logger.debug('Initial bot profile sync notice:', { syncErr });
+    });
+
+    return true;
+  } catch (err: unknown) {
+    isBotRunning = false;
+    lastBotError =
+      err instanceof Error ? err.message : 'Failed to connect to Telegram API';
+    logger.warn(`⚠️ [BOT] Telegram polling launch attempt failed: ${lastBotError}`);
+    return false;
+  } finally {
+    isAttemptingLaunch = false;
+  }
 }
 
 export async function startBot(app: Application): Promise<void> {
@@ -92,17 +117,34 @@ export async function startBot(app: Application): Promise<void> {
       lastBotError = null;
       logger.info(`Bot running in webhook mode: ${webhookUrl}`);
 
-      // Sync bot profile on webhook launch
       syncBotProfileToTelegram(bot).catch((syncErr) => {
         logger.debug('Initial bot profile sync notice:', { syncErr });
       });
-    } else {
-      await launchWithRetry(5, 3000);
+      return;
+    }
+
+    // Polling mode: initial launch attempt
+    await launchBotOnce();
+
+    // Background Supervisor: Auto-reconnect if polling drops or 409 conflict resolves
+    if (!supervisorInterval) {
+      supervisorInterval = setInterval(async () => {
+        if (!isBotRunning && isBotConfigured() && !isAttemptingLaunch) {
+          logger.info('🔄 [BOT Supervisor] Retrying Telegram bot polling connection…');
+          await launchBotOnce();
+        }
+      }, 15000);
     }
 
     // Graceful shutdown signals
-    process.once('SIGINT', () => bot.stop('SIGINT'));
-    process.once('SIGTERM', () => bot.stop('SIGTERM'));
+    process.once('SIGINT', () => {
+      if (supervisorInterval) clearInterval(supervisorInterval);
+      bot.stop('SIGINT');
+    });
+    process.once('SIGTERM', () => {
+      if (supervisorInterval) clearInterval(supervisorInterval);
+      bot.stop('SIGTERM');
+    });
   } catch (error: unknown) {
     isBotRunning = false;
     lastBotError = error instanceof Error ? error.message : 'Failed to connect to Telegram API';

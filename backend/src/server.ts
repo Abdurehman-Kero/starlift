@@ -12,7 +12,7 @@ import logger from './config/logger';
 import { connectDatabase, disconnectDatabase, isDbConnected, lastDbError } from './database/client';
 import { apiRateLimiter } from './middleware/rateLimiter.middleware';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.middleware';
-import { startBot, isBotRunning, lastBotError } from './bot/bot';
+import { startBot, isBotRunning, lastBotError, launchBotOnce } from './bot/bot';
 
 import authRoutes from './routes/auth.routes';
 import participantRoutes from './routes/participants.routes';
@@ -45,11 +45,26 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(apiRateLimiter);
 
-// Health check
-app.get('/health', (_req, res) => {
+// Health check endpoints
+const handleHealth = (_req: Request, res: Response) => {
   res.json({
     success: true,
     message: 'NilePixel StarLift API is running',
+    version: '1.0.2',
+    timestamp: new Date().toISOString(),
+  });
+};
+
+app.get('/health', handleHealth);
+app.get('/api/health', handleHealth);
+
+// Bot reconnect trigger endpoint
+app.all(['/api/bot/reconnect', '/api/bot/restart'], async (_req: Request, res: Response) => {
+  const running = await launchBotOnce();
+  res.json({
+    success: running,
+    running,
+    error: lastBotError,
     timestamp: new Date().toISOString(),
   });
 });
@@ -60,6 +75,7 @@ app.get('/api/system/status', (_req: Request, res: Response) => {
     success: true,
     data: {
       server: 'running',
+      version: '1.0.2',
       port: env.PORT,
       nodeEnv: env.NODE_ENV,
       database: {
