@@ -14,10 +14,14 @@ function escapeHtml(text: string): string {
     .replace(/>/g, '&gt;');
 }
 
+// Temporary cache for photos uploaded right before sending /submit details
+const pendingPhotoByTelegramId = new Map<string, string>();
+
 async function handleSubmit(ctx: Context) {
   if (!ctx.from) return;
 
   const telegramId = BigInt(ctx.from.id);
+  const telegramIdStr = String(ctx.from.id);
 
   try {
     const participant = await getParticipantByTelegramId(telegramId);
@@ -51,10 +55,16 @@ async function handleSubmit(ctx: Context) {
         description = parts.slice(2).join(' | ');
       }
 
+      // If user uploaded a photo first without caption, use that cached photo!
+      if (!imageUrl && pendingPhotoByTelegramId.has(telegramIdStr)) {
+        imageUrl = pendingPhotoByTelegramId.get(telegramIdStr);
+        pendingPhotoByTelegramId.delete(telegramIdStr);
+      }
+
       if (!projectUrl || !projectUrl.startsWith('http')) {
         await ctx.replyWithHTML(
           '⚠️ <b>Invalid URL format.</b> Please ensure your project URL starts with <code>https://</code> or <code>http://</code>.\n\n' +
-            '<b>Format:</b> <code>/submit Project Name | https://yourdemo.com | Short pitch | Optional Image URL</code>'
+            '<b>Required Format:</b> <code>/submit Project Name | https://yourdemo.com | Short pitch</code>'
         );
         return;
       }
@@ -76,11 +86,11 @@ async function handleSubmit(ctx: Context) {
       }
 
       const imageNotice = submission.imageUrl
-        ? `🖼️ <b>Preview Image:</b> Attached\n`
-        : '';
+        ? `🖼️ <b>Preview Image/Banner:</b> Attached ✅\n`
+        : `⚠️ <b>Preview Image:</b> <i>Not attached yet. (Send a photo anytime to attach it!)</i>\n`;
 
       await ctx.replyWithHTML(
-        `✅ <b>Project Submission Received!</b>\n\n` +
+        `✅ <b>Project Specification Received!</b>\n\n` +
           `🏷️ <b>Title:</b> ${escapeHtml(submission.projectTitle || title)}\n` +
           `🔗 <b>Demo / Repo URL:</b> <code>${escapeHtml(submission.projectUrl)}</code>\n` +
           `${imageNotice}` +
@@ -136,7 +146,9 @@ async function handleSubmit(ctx: Context) {
         return;
       }
 
-      const imgNotice = existing.imageUrl ? `🖼️ <b>Banner:</b> Attached\n` : '';
+      const imgNotice = existing.imageUrl
+        ? `🖼️ <b>Banner:</b> Attached ✅\n`
+        : `⚠️ <b>Banner:</b> <i>Not attached yet (Send a photo now to attach it!)</i>\n`;
 
       await ctx.replyWithHTML(
         `⏳ <b>Your Project Submission Status:</b> <b>${existing.status.toUpperCase()}</b>\n\n` +
@@ -144,7 +156,7 @@ async function handleSubmit(ctx: Context) {
           `🔗 <b>Project URL:</b> <code>${url}</code>\n` +
           `${imgNotice}` +
           `💡 <b>Pitch:</b>\n${desc}\n\n` +
-          `<i>Our team is reviewing your submission. You will be notified the moment it is published to @NilePixelTech!</i>\n\n` +
+          `<i>Our team is reviewing your specification. You will be notified the moment it is published to @NilePixelTech!</i>\n\n` +
           `<b>Need to update?</b>\n` +
           `• Send text: <code>/submit New Title | https://new-url.com | Updated pitch</code>\n` +
           `• Or send a photo with updated caption!`,
@@ -158,19 +170,18 @@ async function handleSubmit(ctx: Context) {
       return;
     }
 
-    // No submission yet: Show comprehensive instructions
+    // No submission yet: Show comprehensive instructions with strong photo advice
     await ctx.replyWithHTML(
-      `🚀 <b>Submit Your StarLift Project Showcase</b>\n\n` +
+      `🚀 <b>SUBMIT YOUR PROJECT SPECIFICATION</b>\n\n` +
         `Showcase your project to thousands of developers on @NilePixelTech and compete for the StarLift prizes!\n\n` +
         `📝 <b>Option 1: Quick Text Format</b>\n` +
         `Send a message in this format:\n` +
-        `<code>/submit Project Title | https://yourdemo.com | Short pitch</code>\n` +
-        `<i>With optional image link:</i>\n` +
-        `<code>/submit Title | https://yourdemo.com | Pitch | https://example.com/banner.png</code>\n\n` +
-        `📸 <b>Option 2: Direct Photo / Screenshot Upload (Recommended)</b>\n` +
+        `<code>/submit Project Title | https://yourdemo.com | Short pitch</code>\n\n` +
+        `📸 <b>Option 2: Direct Photo / Screenshot Upload (STRONGLY RECOMMENDED)</b>\n` +
+        `Showcases with visual screenshots receive <b>up to 5x more reactions</b> (30% Score Weight)!\n` +
         `Simply upload a screenshot or banner photo to this bot with the caption:\n` +
         `<code>/submit Project Title | https://yourdemo.com | Short pitch</code>\n\n` +
-        `<i>Once submitted, our team will review and publish your entry directly to @NilePixelTech with automated reaction voting!</i>`,
+        `<i>(Or send the photo first, and then send your details!)</i>`,
       Markup.inlineKeyboard([
         [
           Markup.button.callback('🔗 Get My Invite Link', 'cmd_mylink'),
@@ -208,6 +219,7 @@ export function registerSubmitCommand(bot: Telegraf) {
     if (!ctx.from || !ctx.message || !('photo' in ctx.message)) return;
 
     const telegramId = BigInt(ctx.from.id);
+    const telegramIdStr = String(ctx.from.id);
 
     try {
       const participant = await getParticipantByTelegramId(telegramId);
@@ -258,10 +270,10 @@ export function registerSubmitCommand(bot: Telegraf) {
         }
 
         await ctx.replyWithHTML(
-          `✅ <b>Project Submission Received with Photo!</b>\n\n` +
+          `✅ <b>Project Specification Received with Attached Photo!</b>\n\n` +
             `🏷️ <b>Title:</b> ${escapeHtml(submission.projectTitle || title)}\n` +
             `🔗 <b>Demo / Repo URL:</b> <code>${escapeHtml(submission.projectUrl)}</code>\n` +
-            `🖼️ <b>Screenshot/Banner:</b> Attached\n` +
+            `🖼️ <b>Screenshot/Banner:</b> Attached ✅\n` +
             `💡 <b>Pitch:</b>\n${escapeHtml(submission.description)}\n\n` +
             `⏳ <b>Status:</b> <b>Under Review</b>\n\n` +
             `🚀 <b>YOUR NEXT STEPS RIGHT NOW:</b>\n` +
@@ -308,11 +320,14 @@ export function registerSubmitCommand(bot: Telegraf) {
         return;
       }
 
-      // No existing submission and no caption pipes
+      // No existing submission yet: Cache this photo so their next /submit command uses it!
+      pendingPhotoByTelegramId.set(telegramIdStr, fileId);
+
       await ctx.replyWithHTML(
-        `📸 <b>Photo received!</b>\n\n` +
-          `To submit your project showcase with this photo, please reply to this message or send:\n\n` +
-          `<code>/submit Project Title | https://yourdemo.com | Short pitch</code>`
+        `📸 <b>Photo Received & Saved!</b>\n\n` +
+          `Now, complete your project submission by sending your details in this format:\n\n` +
+          `<code>/submit Project Title | https://yourdemo.com | Short pitch</code>\n\n` +
+          `<i>Your uploaded photo will be automatically attached to this project showcase!</i>`
       );
     } catch (err) {
       logger.error('Error handling photo message:', { err });
