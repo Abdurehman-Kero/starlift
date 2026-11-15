@@ -26,6 +26,7 @@ export function registerStartCommand(bot: Telegraf) {
         username,
         firstName,
         lastName,
+        isCompetitor: true,
       });
 
       // Parse deep link payload for referral code

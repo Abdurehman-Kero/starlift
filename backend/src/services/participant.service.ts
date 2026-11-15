@@ -15,6 +15,7 @@ interface CreateParticipantData {
   username?: string;
   firstName: string;
   lastName?: string;
+  isCompetitor?: boolean;
 }
 
 export async function getOrCreateParticipant(
@@ -25,14 +26,20 @@ export async function getOrCreateParticipant(
   });
 
   if (existing) {
-    // Update name info if changed
+    // Update name info and promote to competitor if explicitly registered via bot
+    const updateData: Prisma.ParticipantUpdateInput = {
+      username: data.username ?? existing.username,
+      firstName: data.firstName,
+      lastName: data.lastName ?? existing.lastName,
+    };
+
+    if (data.isCompetitor === true && !existing.isCompetitor) {
+      updateData.isCompetitor = true;
+    }
+
     const updated = await prisma.participant.update({
       where: { id: existing.id },
-      data: {
-        username: data.username ?? existing.username,
-        firstName: data.firstName,
-        lastName: data.lastName ?? existing.lastName,
-      },
+      data: updateData,
     });
     return { participant: updated, isNew: false };
   }
@@ -45,6 +52,7 @@ export async function getOrCreateParticipant(
       firstName: data.firstName,
       lastName: data.lastName,
       referralCode,
+      isCompetitor: data.isCompetitor ?? false,
     },
   });
 
@@ -92,7 +100,7 @@ export async function getLeaderboard(
   skip = 0
 ): Promise<LeaderboardEntry[]> {
   const participants = await prisma.participant.findMany({
-    where: { isActive: true },
+    where: { isActive: true, isCompetitor: true },
     include: {
       _count: { select: { referralsMade: { where: { status: 'confirmed' } } } },
       reactions: true,
@@ -126,23 +134,28 @@ export interface ListParticipantsOptions {
   search?: string;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
+  isCompetitor?: boolean;
 }
 
 export async function listParticipants(options: ListParticipantsOptions = {}) {
-  const { page = 1, limit = 20, search, sortBy = 'registeredAt', sortOrder = 'desc' } =
+  const { page = 1, limit = 20, search, sortBy = 'registeredAt', sortOrder = 'desc', isCompetitor } =
     options;
   const skip = (page - 1) * limit;
 
-  const where: Prisma.ParticipantWhereInput = search
-    ? {
-        OR: [
-          { username: { contains: search } },
-          { firstName: { contains: search } },
-          { lastName: { contains: search } },
-          { referralCode: { contains: search } },
-        ],
-      }
-    : {};
+  const where: Prisma.ParticipantWhereInput = {};
+
+  if (search) {
+    where.OR = [
+      { username: { contains: search, mode: 'insensitive' } },
+      { firstName: { contains: search, mode: 'insensitive' } },
+      { lastName: { contains: search, mode: 'insensitive' } },
+      { referralCode: { contains: search, mode: 'insensitive' } },
+    ];
+  }
+
+  if (isCompetitor !== undefined) {
+    where.isCompetitor = isCompetitor;
+  }
 
   const allowedSortFields: Record<string, Prisma.ParticipantOrderByWithRelationInput> = {
     registeredAt: { registeredAt: sortOrder },

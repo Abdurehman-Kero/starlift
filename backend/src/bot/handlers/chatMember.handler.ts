@@ -59,13 +59,14 @@ export function registerChatMemberHandler(bot: {
         return;
       }
 
-      // Register new member as participant
+      // Register new member as an invited channel member (not a competitor until they /start the bot)
       const telegramId = BigInt(user.id);
       const { participant: newMember, isNew } = await getOrCreateParticipant({
         telegramId,
         username: user.username,
         firstName: user.first_name,
         lastName: user.last_name,
+        isCompetitor: false,
       });
 
       await prisma.activityLog.create({

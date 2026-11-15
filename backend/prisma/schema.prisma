@@ -30,6 +30,7 @@ model Participant {
   registeredAt   DateTime @default(now())
   updatedAt      DateTime @updatedAt
   isActive       Boolean  @default(true)
+  isCompetitor   Boolean  @default(false)
 
   invitationLinks   InvitationLink[]
   referralsMade     Referral[]         @relation("ReferrerRelation")
@@ -40,6 +41,7 @@ model Participant {
 
   @@index([telegramId])
   @@index([referralCode])
+  @@index([isCompetitor])
   @@map("participants")
 }
 

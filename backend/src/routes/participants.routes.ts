@@ -11,7 +11,7 @@ const router = Router();
 router.use(authMiddleware);
 
 router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
-  const { page, limit, search, sortBy, sortOrder } = req.query as Record<string, string>;
+  const { page, limit, search, sortBy, sortOrder, isCompetitor } = req.query as Record<string, string>;
 
   const result = await listParticipants({
     page: page ? parseInt(page, 10) : 1,
@@ -19,6 +19,7 @@ router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
     search,
     sortBy,
     sortOrder: sortOrder === 'asc' ? 'asc' : 'desc',
+    isCompetitor: isCompetitor === 'true' ? true : isCompetitor === 'false' ? false : undefined,
   });
 
   res.json({ success: true, data: result });

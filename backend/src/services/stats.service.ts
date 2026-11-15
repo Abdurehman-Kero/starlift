@@ -2,12 +2,14 @@ import { prisma } from '../database/client';
 
 export async function getOverviewStats() {
   const [
-    totalParticipants,
+    totalContestants,
+    totalMembersJoined,
     totalReferrals,
     participantsWithReferrals,
     recentReferrals,
   ] = await Promise.all([
-    prisma.participant.count({ where: { isActive: true } }),
+    prisma.participant.count({ where: { isActive: true, isCompetitor: true } }),
+    prisma.participant.count({ where: { isActive: true, isCompetitor: false } }),
     prisma.referral.count({ where: { status: 'confirmed' } }),
     prisma.referral.groupBy({
       by: ['referrerId'],
@@ -25,10 +27,12 @@ export async function getOverviewStats() {
   ]);
 
   return {
-    totalParticipants,
+    totalParticipants: totalContestants,
+    totalContestants,
+    totalMembersJoined,
     totalReferrals,
     participantsWithReferrals: participantsWithReferrals.length,
-    totalChannelMembers: totalParticipants, // Approximation; use Telegram API for exact count
+    totalChannelMembers: totalContestants + totalMembersJoined,
     recentReferrals,
   };
 }

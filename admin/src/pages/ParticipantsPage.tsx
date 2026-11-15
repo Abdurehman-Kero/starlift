@@ -24,6 +24,7 @@ interface ParticipantItem {
   lastName: string | null;
   referralCode: string;
   registeredAt: string;
+  isCompetitor: boolean;
   _count: {
     referralsMade: number;
   };
@@ -71,10 +72,11 @@ export const ParticipantsPage: React.FC = () => {
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState('registeredAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [roleFilter, setRoleFilter] = useState<'all' | 'contestants' | 'members'>('all');
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
   const { data: res, isLoading } = useQuery({
-    queryKey: ['participants', page, search, sortBy, sortOrder],
+    queryKey: ['participants', page, search, sortBy, sortOrder, roleFilter],
     queryFn: () =>
       participantsApi.list({
         page,
@@ -82,6 +84,7 @@ export const ParticipantsPage: React.FC = () => {
         search,
         sortBy,
         sortOrder,
+        isCompetitor: roleFilter === 'all' ? undefined : roleFilter === 'contestants',
       }),
   });
 
@@ -199,7 +202,50 @@ export const ParticipantsPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+          {/* Role Filter Tabs */}
+          <div className="inline-flex items-center p-0.5 bg-slate-100 rounded-lg text-xs font-medium text-slate-600">
+            <button
+              onClick={() => {
+                setRoleFilter('all');
+                setPage(1);
+              }}
+              className={`px-2.5 py-1.5 rounded-md transition-colors ${
+                roleFilter === 'all'
+                  ? 'bg-white text-slate-900 font-semibold shadow-xs'
+                  : 'hover:text-slate-900'
+              }`}
+            >
+              All ({total})
+            </button>
+            <button
+              onClick={() => {
+                setRoleFilter('contestants');
+                setPage(1);
+              }}
+              className={`px-2.5 py-1.5 rounded-md transition-colors ${
+                roleFilter === 'contestants'
+                  ? 'bg-white text-blue-700 font-semibold shadow-xs'
+                  : 'hover:text-slate-900'
+              }`}
+            >
+              🏆 Contestants
+            </button>
+            <button
+              onClick={() => {
+                setRoleFilter('members');
+                setPage(1);
+              }}
+              className={`px-2.5 py-1.5 rounded-md transition-colors ${
+                roleFilter === 'members'
+                  ? 'bg-white text-slate-900 font-semibold shadow-xs'
+                  : 'hover:text-slate-900'
+              }`}
+            >
+              👥 Joined Members
+            </button>
+          </div>
+
           {/* Search Input */}
           <div className="relative w-full sm:w-64">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -302,7 +348,18 @@ export const ParticipantsPage: React.FC = () => {
                             {p.firstName ? p.firstName.charAt(0).toUpperCase() : 'U'}
                           </div>
                           <div>
-                            <div className="font-semibold text-slate-900 leading-snug">{fullName}</div>
+                            <div className="font-semibold text-slate-900 leading-snug flex items-center gap-1.5 flex-wrap">
+                              <span>{fullName}</span>
+                              {p.isCompetitor ? (
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                                  🏆 Contestant
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                                  👥 Joined Member
+                                </span>
+                              )}
+                            </div>
                             {usernameText ? (
                               <div className="text-[11px] text-blue-600 font-medium">{usernameText}</div>
                             ) : (

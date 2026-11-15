@@ -70,7 +70,7 @@ export const statsApi = {
 
 // Participants
 export const participantsApi = {
-  list: (params?: { search?: string; page?: number; limit?: number; sortBy?: string; sortOrder?: string }) =>
+  list: (params?: { search?: string; page?: number; limit?: number; sortBy?: string; sortOrder?: string; isCompetitor?: boolean }) =>
     api.get('/participants', { params }),
   get: (id: number) => api.get(`/participants/${id}`),
   verifySubmission: (id: number, status: string) => api.patch(`/participants/${id}/verify-submission`, { status }),

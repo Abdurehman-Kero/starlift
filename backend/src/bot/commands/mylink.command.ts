@@ -19,8 +19,8 @@ async function handleMyLink(ctx: Context) {
 
   try {
     const participant = await getParticipantByTelegramId(telegramId);
-    if (!participant) {
-      await ctx.reply('Please register first by sending /start');
+    if (!participant || !participant.isCompetitor) {
+      await ctx.reply('🌟 Please register as a contestant first by sending /start');
       return;
     }
 

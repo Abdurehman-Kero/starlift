@@ -24,6 +24,8 @@ import { Link } from 'react-router-dom';
 
 interface OverviewStats {
   totalParticipants: number;
+  totalContestants?: number;
+  totalMembersJoined?: number;
   totalReferrals: number;
   participantsWithReferrals: number;
   totalChannelMembers: number;
@@ -79,30 +81,30 @@ export const OverviewPage: React.FC = () => {
 
   const statCards = [
     {
-      label: 'Registered Participants',
-      value: stats?.totalParticipants ?? 0,
-      sublabel: 'Active bot users',
+      label: 'Showcase Contestants',
+      value: stats?.totalContestants ?? stats?.totalParticipants ?? 0,
+      sublabel: 'Registered competitors',
       icon: Users,
       iconBg: 'bg-blue-50 text-blue-600 border-blue-100',
     },
     {
       label: 'Confirmed Referrals',
       value: stats?.totalReferrals ?? 0,
-      sublabel: 'Verified channel joins',
+      sublabel: 'Verified referral points',
       icon: GitBranch,
       iconBg: 'bg-emerald-50 text-emerald-600 border-emerald-100',
     },
     {
-      label: 'Channel Members via Link',
-      value: stats?.totalChannelMembers ?? 0,
-      sublabel: 'Direct acquisitions',
+      label: 'Members Joined (via Link)',
+      value: stats?.totalMembersJoined ?? 0,
+      sublabel: 'Direct channel joins',
       icon: UserCheck,
       iconBg: 'bg-indigo-50 text-indigo-600 border-indigo-100',
     },
     {
       label: 'Active Referrers',
       value: stats?.participantsWithReferrals ?? 0,
-      sublabel: `${referralConversion}% participant conversion`,
+      sublabel: `${referralConversion}% contestant conversion`,
       icon: Trophy,
       iconBg: 'bg-amber-50 text-amber-600 border-amber-100',
     },

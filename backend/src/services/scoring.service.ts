@@ -24,7 +24,7 @@ export async function calculateScores(): Promise<ScoreEntry[]> {
   const reactionWeight = reactionWeightStr ? parseFloat(reactionWeightStr) : 30;
 
   const participants = await prisma.participant.findMany({
-    where: { isActive: true },
+    where: { isActive: true, isCompetitor: true },
     include: {
       _count: { select: { referralsMade: { where: { status: 'confirmed' } } } },
       reactions: true,
