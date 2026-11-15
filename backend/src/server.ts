@@ -25,29 +25,20 @@ import activityRoutes from './routes/activity.routes';
 const app = express();
 
 // Security & parsing
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (e.g. mobile apps, curl, server-to-server)
-      if (!origin) return callback(null, true);
-
-      // Support Vercel deployments, localhost, and configured CORS_ORIGIN
-      const isAllowed =
-        !env.CORS_ORIGIN ||
-        env.CORS_ORIGIN === '*' ||
-        origin === env.CORS_ORIGIN ||
-        origin.endsWith('.vercel.app') ||
-        origin.endsWith('.onrender.com') ||
-        origin.includes('localhost') ||
-        origin.includes('127.0.0.1');
-
-      if (isAllowed) {
-        return callback(null, true);
-      }
-      return callback(null, true);
+      // Reflect requesting origin to allow Vercel, localhost, and custom domains with credentials
+      callback(null, origin || true);
     },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   })
 );
 app.use(express.json());
