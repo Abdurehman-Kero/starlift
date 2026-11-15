@@ -34,9 +34,6 @@ async function handleStats(ctx: Context) {
     const myScore = scores.find((s) => s.id === participant.id);
     const rank = myScore?.rank ?? scores.length + 1;
     const totalParticipants = scores.length;
-
-    const referralScore = myScore ? (myScore.referralScore * 0.70).toFixed(1) : '0.0';
-    const reactionScore = myScore ? (myScore.reactionScore * 0.30).toFixed(1) : '0.0';
     const finalScore = myScore ? myScore.finalScore.toFixed(1) : '0.0';
     const reactionCount = myScore?.reactionCount ?? 0;
 
@@ -59,10 +56,10 @@ async function handleStats(ctx: Context) {
       `• <b>Contestant:</b> ${name}\n` +
       `• <b>Referral Code:</b> <code>${code}</code>\n` +
       `• <b>Current Standing:</b> Rank #${rank} of ${totalParticipants} contestants\n\n` +
-      `<b>Your Exact Performance Numbers:</b>\n` +
-      `• <b>Confirmed Referrals:</b> ${referralCount} members\n` +
-      `• <b>Project Reactions:</b> ${reactionCount} reactions\n` +
-      `• <b>Total Score:</b> ${finalScore} pts (70% referrals: ${referralScore} + 30% reactions: ${reactionScore})\n\n` +
+      `<b>Your Performance:</b>\n` +
+      `• <b>Referrals:</b> ${referralCount} members\n` +
+      `• <b>Reactions:</b> ${reactionCount} reactions\n` +
+      `• <b>Total Score:</b> ${finalScore} points\n\n` +
       `${showcaseLine}\n` +
       `<b>Your Personal Invite Link:</b>\n${linkText}`;
 
