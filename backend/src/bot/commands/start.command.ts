@@ -6,7 +6,7 @@ import {
 } from '../../services/participant.service';
 import { createReferral } from '../../services/referral.service';
 import { getSubmissionByParticipantId } from '../../services/showcase.service';
-import { getActiveInviteLink } from '../../services/invitation.service';
+import { getOrCreateParticipantInviteLink } from '../../services/invitation.service';
 import { userSessions } from './submit.command';
 import { prisma } from '../../database/client';
 import logger from '../../config/logger';
@@ -121,14 +121,22 @@ async function renderStartScreen(ctx: Context) {
         `• <b>Status:</b> ${submission.status.toUpperCase()} (Under Review)\n`;
     }
 
-    const [activeLink, referralCount] = await Promise.all([
-      getActiveInviteLink(participant.id),
+    const [inviteRecord, referralCount] = await Promise.all([
+      getOrCreateParticipantInviteLink(participant.id, participant.referralCode),
       getReferralCount(participant.id),
     ]);
 
-    const linkText = activeLink
-      ? `<code>${escapeHtml(activeLink.inviteLink)}</code>`
+    const inviteLink = inviteRecord?.inviteLink;
+    const linkText = inviteLink
+      ? `<code>${escapeHtml(inviteLink)}</code>`
       : '<i>Tap "Get Invite Link" below to generate your link</i>';
+
+    const shareText = encodeURIComponent(
+      'Join @NilePixelTech to support my project in the NilePixel StarLift Challenge!'
+    );
+    const shareUrl = inviteLink
+      ? `https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=${shareText}`
+      : 'https://t.me/NilePixelTech';
 
     const existingText =
       `<b>Welcome back, ${name}.</b>\n\n` +
@@ -147,7 +155,9 @@ async function renderStartScreen(ctx: Context) {
       keyboardButtons.push([Markup.button.url('View Live Showcase Post', submission.channelPostUrl)]);
     }
     keyboardButtons.push([
-      Markup.button.callback('Get Invite Link', 'cmd_mylink'),
+      ...(inviteLink
+        ? [Markup.button.url('Share Invite Link', shareUrl)]
+        : [Markup.button.callback('Get Invite Link', 'cmd_mylink')]),
       Markup.button.callback('My Stats', 'cmd_stats'),
     ]);
     keyboardButtons.push([

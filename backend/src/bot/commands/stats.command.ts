@@ -1,7 +1,7 @@
 import { Context, Markup, Telegraf } from 'telegraf';
 import { getParticipantByTelegramId, getReferralCount } from '../../services/participant.service';
 import { calculateScores } from '../../services/scoring.service';
-import { getActiveInviteLink } from '../../services/invitation.service';
+import { getOrCreateParticipantInviteLink } from '../../services/invitation.service';
 import { getSubmissionByParticipantId } from '../../services/showcase.service';
 import logger from '../../config/logger';
 
@@ -24,15 +24,23 @@ async function handleStats(ctx: Context) {
       return;
     }
 
-    const [referralCount, activeLink, submission] = await Promise.all([
+    const [referralCount, inviteRecord, submission] = await Promise.all([
       getReferralCount(participant.id),
-      getActiveInviteLink(participant.id),
+      getOrCreateParticipantInviteLink(participant.id, participant.referralCode),
       getSubmissionByParticipantId(participant.id),
     ]);
 
-    const linkText = activeLink
-      ? `<code>${escapeHtml(activeLink.inviteLink)}</code>`
+    const inviteLink = inviteRecord?.inviteLink;
+    const linkText = inviteLink
+      ? `<code>${escapeHtml(inviteLink)}</code>`
       : '<i>Tap "Get Invite Link" below to generate your link</i>';
+
+    const shareText = encodeURIComponent(
+      'Join @NilePixelTech to support my project in the NilePixel StarLift Challenge!'
+    );
+    const shareUrl = inviteLink
+      ? `https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=${shareText}`
+      : 'https://t.me/NilePixelTech';
 
     const showcaseLine =
       submission?.status === 'published' && submission.channelPostUrl
@@ -57,7 +65,9 @@ async function handleStats(ctx: Context) {
 
     const buttons = [
       [
-        Markup.button.callback('Get Invite Link', 'cmd_mylink'),
+        ...(inviteLink
+          ? [Markup.button.url('Share Invite Link', shareUrl)]
+          : [Markup.button.callback('Get Invite Link', 'cmd_mylink')]),
         Markup.button.callback('Refresh Stats', 'cmd_stats'),
       ],
       [

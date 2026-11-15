@@ -2,6 +2,7 @@ import { prisma } from '../database/client';
 import { bot } from '../bot/bot';
 import { Markup } from 'telegraf';
 import { getSetting } from './settings.service';
+import { getOrCreateParticipantInviteLink } from './invitation.service';
 import { env } from '../config/env';
 import logger from '../config/logger';
 
@@ -94,7 +95,17 @@ export async function publishShowcaseToChannel(submissionId: number, adminEmail?
   const referralCode = escapeHtml(participant.referralCode);
   const projectUrl = escapeHtml(submission.projectUrl);
   const description = escapeHtml(submission.description);
-  const inviteLink = submission.participant.invitationLinks[0]?.inviteLink;
+
+  let inviteLink = submission.participant.invitationLinks?.[0]?.inviteLink;
+  if (!inviteLink) {
+    const generated = await getOrCreateParticipantInviteLink(
+      participant.id,
+      participant.referralCode
+    );
+    if (generated) {
+      inviteLink = generated.inviteLink;
+    }
+  }
 
   const authorLine = contestantHandle
     ? `<b>Creator:</b> ${contestantName} (${contestantHandle})`
@@ -186,19 +197,49 @@ export async function publishShowcaseToChannel(submissionId: number, adminEmail?
 
   // Notify contestant via private DM from bot
   try {
+    const shareText = encodeURIComponent(
+      `Support my project "${submission.projectTitle || 'StarLift Showcase'}" in the NilePixel StarLift Challenge!`
+    );
+    const shareUrl = inviteLink
+      ? `https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=${shareText}`
+      : postUrl;
+
+    const linkDisplay = inviteLink
+      ? `<code>${inviteLink}</code>`
+      : '<i>Tap "My Stats" below to view your link</i>';
+
     const dmText =
       `<b>Congratulations, ${contestantName}!</b>\n\n` +
       `Your project <b>${title}</b> has officially been published on @NilePixelTech.\n\n` +
       `• <b>Showcase Post Link:</b>\n` +
       `<a href="${postUrl}">${postUrl}</a>\n\n` +
-      `<b>What to do next:</b>\n` +
-      `• Share your post and personal invite link with friends and developer groups.\n` +
-      `• Encourage supporters to join the channel and react to your showcase post.\n` +
-      `• Track your confirmed referrals anytime using /stats!`;
+      `• <b>Your Personal Invite Link:</b>\n` +
+      `${linkDisplay}\n\n` +
+      `• <b>Referral Code:</b> <code>${referralCode}</code>\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `<b>What to do next:</b>\n\n` +
+      `1. <b>Share your personal invite link:</b>\n` +
+      `Send your invite link to friends, colleagues, and developer groups. Every person who joins @NilePixelTech through your link is counted as your confirmed referral.\n\n` +
+      `2. <b>Share your showcase post:</b>\n` +
+      `Forward your showcase post from @NilePixelTech and ask supporters to react to it.\n\n` +
+      `3. <b>Track your results:</b>\n` +
+      `Check how many people have joined through your link anytime with /stats!`;
+
+    const keyboard = Markup.inlineKeyboard([
+      [
+        Markup.button.url('View Showcase Post', postUrl),
+        ...(inviteLink ? [Markup.button.url('Share Invite Link', shareUrl)] : []),
+      ],
+      [
+        Markup.button.callback('My Stats', 'cmd_stats'),
+        Markup.button.callback('Main Menu', 'cmd_start'),
+      ],
+    ]);
 
     await bot.telegram.sendMessage(participant.telegramId.toString(), dmText, {
       parse_mode: 'HTML',
       link_preview_options: { is_disabled: false },
+      ...keyboard,
     });
   } catch (dmErr) {
     logger.warn('Failed to send private showcase notification to contestant:', { dmErr });

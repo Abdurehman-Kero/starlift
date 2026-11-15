@@ -5,7 +5,7 @@ import {
   createOrUpdateSubmission,
   notifyAdminsOfNewSubmission,
 } from '../../services/showcase.service';
-import { getActiveInviteLink } from '../../services/invitation.service';
+import { getActiveInviteLink, getOrCreateParticipantInviteLink } from '../../services/invitation.service';
 import logger from '../../config/logger';
 
 function escapeHtml(text: string): string {
@@ -91,29 +91,46 @@ async function finalizeSubmission(
   }
 
   const title = escapeHtml(submission.projectTitle || 'Showcase Project');
-  const activeLink = await getActiveInviteLink(participantId);
-  const linkText = activeLink
-    ? `<code>${escapeHtml(activeLink.inviteLink)}</code>`
-    : `<i>Tap "Get Invite Link" below to generate your link</i>`;
+  const participant = await getParticipantByTelegramId(BigInt(ctx.from!.id));
+  const referralCode = participant?.referralCode || '';
+  const inviteRecord = await getOrCreateParticipantInviteLink(participantId, referralCode);
+  const inviteLink = inviteRecord?.inviteLink;
+
+  const linkText = inviteLink
+    ? `<code>${escapeHtml(inviteLink)}</code>`
+    : `<i>Your invite link is being generated... Tap "My Stats" below to view it.</i>`;
 
   const bannerNotice = submission.imageUrl
     ? `• <b>Banner Image:</b> Attached\n`
     : `• <b>Banner Image:</b> Not attached (you can send a photo anytime to attach one)\n`;
+
+  const shareText = encodeURIComponent(
+    'Join @NilePixelTech to support my project in the NilePixel StarLift Challenge!'
+  );
+  const shareUrl = inviteLink
+    ? `https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=${shareText}`
+    : 'https://t.me/NilePixelTech';
 
   await ctx.replyWithHTML(
     `<b>Project Specification Submitted</b>\n\n` +
       `Your project <b>${title}</b> has been received and is now under review.\n\n` +
       `• <b>Status:</b> Under Review\n` +
       `${bannerNotice}\n` +
-      `Our team will review your specification and feature it on @NilePixelTech.\n` +
-      `If you have questions or need support, contact @NilePixelSupportBot.\n\n` +
+      `Our team will review your project and feature it on @NilePixelTech shortly. Once published, you will receive a direct notification with your showcase post link right here.\n\n` +
       `━━━━━━━━━━━━━━━━━━━━━━\n` +
       `<b>Your Channel Invite Link is Ready:</b>\n` +
       `${linkText}\n\n` +
-      `Share this link with your network to invite friends to @NilePixelTech. Every confirmed join is credited directly to your profile.`,
+      `• <b>Referral Code:</b> <code>${escapeHtml(referralCode)}</code>\n\n` +
+      `<b>What to do next:</b>\n\n` +
+      `1. <b>Share your personal invite link:</b>\n` +
+      `Send your invite link to friends, colleagues, and developer groups. Every person who joins @NilePixelTech through your link is counted directly to your profile.\n\n` +
+      `2. <b>Showcase publication:</b>\n` +
+      `Once published on @NilePixelTech, share your post and ask supporters to react to it.\n\n` +
+      `3. <b>Check your statistics:</b>\n` +
+      `Tap <b>My Stats</b> below anytime to track your confirmed referrals in real time.`,
     Markup.inlineKeyboard([
       [
-        Markup.button.callback('Get My Invite Link', 'cmd_mylink'),
+        ...(inviteLink ? [Markup.button.url('Share Invite Link', shareUrl)] : []),
         Markup.button.callback('My Stats', 'cmd_stats'),
       ],
       [

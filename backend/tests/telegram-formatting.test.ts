@@ -34,4 +34,38 @@ describe('Telegram Formatting & Deep Link Parsing', () => {
     expect(extractStartPayload('/start A1B2C3D4E5')).toBe('A1B2C3D4E5');
     expect(extractStartPayload('/start   F9E8D7C6B5  ')).toBe('F9E8D7C6B5');
   });
+
+  it('formats showcase publication DM message with post link, invite link, and clear action steps', () => {
+    const contestantName = 'NilePixelContact';
+    const title = 'StarLift Project';
+    const postUrl = 'https://t.me/NilePixelTech/215';
+    const inviteLink = 'https://t.me/+vCsFDmGtwQdhZjY0';
+    const referralCode = 'E8A739D375';
+
+    const dmText =
+      `<b>Congratulations, ${contestantName}!</b>\n\n` +
+      `Your project <b>${title}</b> has officially been published on @NilePixelTech.\n\n` +
+      `• <b>Showcase Post Link:</b>\n` +
+      `<a href="${postUrl}">${postUrl}</a>\n\n` +
+      `• <b>Your Personal Invite Link:</b>\n` +
+      `<code>${inviteLink}</code>\n\n` +
+      `• <b>Referral Code:</b> <code>${referralCode}</code>\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `<b>What to do next:</b>\n\n` +
+      `1. <b>Share your personal invite link:</b>\n` +
+      `Send your invite link to friends, colleagues, and developer groups. Every person who joins @NilePixelTech through your link is counted as your confirmed referral.\n\n` +
+      `2. <b>Share your showcase post:</b>\n` +
+      `Forward your showcase post from @NilePixelTech and ask supporters to react to it.\n\n` +
+      `3. <b>Track your results:</b>\n` +
+      `Check how many people have joined through your link anytime with /stats!`;
+
+    expect(dmText).toContain(`Congratulations, ${contestantName}!`);
+    expect(dmText).toContain(`• <b>Showcase Post Link:</b>\n<a href="${postUrl}">${postUrl}</a>`);
+    expect(dmText).toContain(`• <b>Your Personal Invite Link:</b>\n<code>${inviteLink}</code>`);
+    expect(dmText).toContain(`• <b>Referral Code:</b> <code>${referralCode}</code>`);
+    expect(dmText).toContain('What to do next:');
+    expect(dmText).toContain('1. <b>Share your personal invite link:</b>');
+    expect(dmText).toContain('2. <b>Share your showcase post:</b>');
+    expect(dmText).toContain('3. <b>Track your results:</b>');
+  });
 });
