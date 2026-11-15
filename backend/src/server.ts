@@ -51,7 +51,7 @@ const handleHealth = (_req: Request, res: Response) => {
   res.json({
     success: true,
     message: 'NilePixel StarLift API is running',
-    version: '1.0.4',
+    version: '1.0.5',
     timestamp: new Date().toISOString(),
   });
 };
@@ -76,7 +76,7 @@ app.get('/api/system/status', (_req: Request, res: Response) => {
     success: true,
     data: {
       server: 'running',
-      version: '1.0.4',
+      version: '1.0.5',
       port: env.PORT,
       nodeEnv: env.NODE_ENV,
       database: {

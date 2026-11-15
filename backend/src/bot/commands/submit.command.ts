@@ -23,7 +23,7 @@ interface SubmissionSession {
 }
 
 // In-memory wizard sessions per Telegram user ID
-const userSessions = new Map<string, SubmissionSession>();
+export const userSessions = new Map<string, SubmissionSession>();
 
 /**
  * Completes the submission, saves to database, notifies contestant, and alerts administrator group
@@ -96,7 +96,7 @@ async function finalizeSubmission(
 /**
  * Starts the interactive step-by-step submission questionnaire
  */
-async function startSubmissionWizard(
+export async function startSubmissionWizard(
   ctx: Context,
   participantId: number,
   initialImageUrl?: string

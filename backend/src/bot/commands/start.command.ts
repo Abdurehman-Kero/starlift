@@ -2,6 +2,7 @@ import { Context, Markup, Telegraf } from 'telegraf';
 import { getOrCreateParticipant, getParticipantByReferralCode } from '../../services/participant.service';
 import { createReferral } from '../../services/referral.service';
 import { getSubmissionByParticipantId } from '../../services/showcase.service';
+import { userSessions } from './submit.command';
 import { prisma } from '../../database/client';
 import logger from '../../config/logger';
 
@@ -70,37 +71,29 @@ async function renderStartScreen(ctx: Context) {
     const submission = await getSubmissionByParticipantId(participant.id);
 
     if (!submission) {
-      // IMMEDIATE ACTION: Prompt them to submit project specification & strongly advise image
+      // Automatically prime wizard so the very next message they send is their project title!
+      userSessions.set(String(ctx.from.id), {
+        step: 'TITLE',
+        imageUrl: null,
+      });
+
       const welcomeText =
         `🌟 <b>Welcome to NilePixel StarLift, ${name}!</b>\n\n` +
         `You are officially registered for the <b>StarLift Project Showcase Challenge</b>!\n` +
         `🔑 <b>Your Referral Code:</b> <code>${code}</code>\n\n` +
         `━━━━━━━━━━━━━━━━━━━━━━\n` +
-        `🎯 <b>IMMEDIATE ACTION: SUBMIT YOUR PROJECT SPECIFICATION</b>\n` +
-        `Before you begin inviting members, you must submit your project showcase details so our team can feature your work on @NilePixelTech!\n\n` +
-        `📝 <b>How to Submit Your Project:</b>\n` +
-        `Send a message in this exact format:\n` +
-        `<code>/submit Project Title | https://yourdemo.com | Short pitch description</code>\n\n` +
-        `📸 <b>STRONGLY RECOMMENDED: ATTACH AN IMAGE / SCREENSHOT!</b>\n` +
-        `Showcase posts with a visual banner receive significantly more votes and reactions (<b>30% Score Weight</b>)!\n\n` +
-        `👉 <b>How to submit with an image:</b>\n` +
-        `Simply upload your project screenshot or banner photo directly to this chat with the caption:\n` +
-        `<code>/submit Project Title | https://yourdemo.com | Short pitch</code>\n` +
-        `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
-        `💡 <i>Once submitted, you will immediately unlock your personal channel invite link to begin earning your 70% referral score!</i>`;
+        `🚀 <b>PROJECT SHOWCASE SPECIFICATION (Step 1 of 4)</b>\n\n` +
+        `To feature your project on <b>@NilePixelTech</b> and unlock your personal referral invite link, let's set up your project details:\n\n` +
+        `📸 <i>Tip: You will be asked to attach a screenshot or banner photo at Step 4 (or send one anytime) to boost your votes by up to 5x!</i>\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━\n` +
+        `🏷️ <b>What is your Project Title?</b>\n` +
+        `<i>Please reply with the name of your project (e.g. <b>NilePay</b>):</i>`;
 
       await ctx.replyWithHTML(
         welcomeText,
         Markup.inlineKeyboard([
           [
-            Markup.button.callback('💡 Submit Project Specification Now', 'cmd_submit'),
-          ],
-          [
-            Markup.button.callback('🔗 Get My Invite Link', 'cmd_mylink'),
-            Markup.button.callback('📊 My Stats & Rank', 'cmd_stats'),
-          ],
-          [
-            Markup.button.callback('🏆 Leaderboard', 'cmd_leaderboard'),
+            Markup.button.callback('💡 Step-by-Step Wizard', 'cmd_submit'),
             Markup.button.callback('ℹ️ Guide & Rules', 'cmd_help'),
           ],
           [
