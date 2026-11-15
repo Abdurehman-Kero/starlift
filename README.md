@@ -6,7 +6,7 @@ Production-grade Telegram referral tracking system and administrative management
 
 ## 1. System Architecture & Overview
 
-The system operates alongside the separate project submission bot (`@NilePixelSupportBot`) to manage community participation, referral growth, and transparent winner selection:
+The system operates as a unified platform on `@NilePixelStarLiftBot` to manage contestant registration, direct showcase project submissions (with optional screenshots/banners), personal channel referral invite links, 70/30 scoring, and admin 1-click publishing:
 
 ```
                                   Telegram Cloud
