@@ -88,6 +88,7 @@ export async function launchBotOnce(): Promise<boolean> {
         allowedUpdates: [
           'message',
           'chat_member',
+          'my_chat_member',
           'callback_query',
           'message_reaction_count',
           'message_reaction',
@@ -140,13 +141,13 @@ export async function startBot(app: Application): Promise<void> {
         allowed_updates: [
           'message',
           'chat_member',
+          'my_chat_member',
           'callback_query',
           'message_reaction_count',
           'message_reaction',
         ] as any,
       });
 
-      app.use(webhookPath, bot.webhookCallback(webhookPath));
       isBotRunning = true;
       lastBotError = null;
       logger.info(`Bot running in webhook mode: ${webhookUrl}`);

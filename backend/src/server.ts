@@ -12,7 +12,7 @@ import logger from './config/logger';
 import { connectDatabase, disconnectDatabase, isDbConnected, lastDbError } from './database/client';
 import { apiRateLimiter } from './middleware/rateLimiter.middleware';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.middleware';
-import { startBot, isBotRunning, lastBotError, launchBotOnce } from './bot/bot';
+import { startBot, isBotRunning, lastBotError, launchBotOnce, bot } from './bot/bot';
 
 import authRoutes from './routes/auth.routes';
 import participantRoutes from './routes/participants.routes';
@@ -76,7 +76,7 @@ app.get('/api/system/status', (_req: Request, res: Response) => {
     success: true,
     data: {
       server: 'running',
-      version: '1.0.3',
+      version: '1.0.4',
       port: env.PORT,
       nodeEnv: env.NODE_ENV,
       database: {
@@ -119,9 +119,42 @@ app.use('/api/settings', requireDatabase, settingsRoutes);
 app.use('/api/activity', requireDatabase, activityRoutes);
 app.use('/api/submissions', requireDatabase, submissionsRoutes);
 
+// Telegram Webhook route (must be mounted before notFoundHandler)
+app.use('/webhook', (req: Request, res: Response, next: NextFunction) => {
+  if (isBotConfigured()) {
+    return (bot.webhookCallback('/webhook') as any)(req, res, next);
+  }
+  next();
+});
+
 // 404 & error handlers (must be after all routes)
 app.use(notFoundHandler);
 app.use(errorHandler);
+
+/**
+ * Keeps Render free tier awake by pinging its own public health endpoint every 9 minutes.
+ * Render free web services spin down after 15 minutes of inactivity; this guarantees 24/7 responsiveness.
+ */
+function startKeepAlive() {
+  const targetUrl = process.env.RENDER_EXTERNAL_URL
+    ? `${process.env.RENDER_EXTERNAL_URL}/health`
+    : 'https://starlift.onrender.com/health';
+
+  logger.info(`🔄 Keep-Alive self-pinger initialized. Target: ${targetUrl}`);
+
+  setInterval(async () => {
+    try {
+      const response = await fetch(targetUrl);
+      if (response.ok) {
+        logger.info(`[Keep-Alive] Pinged ${targetUrl} (Status: ${response.status})`);
+      } else {
+        logger.warn(`[Keep-Alive] Ping to ${targetUrl} returned status ${response.status}`);
+      }
+    } catch (pingErr) {
+      logger.warn('[Keep-Alive] Self-ping notice (will retry in 9m):', { pingErr });
+    }
+  }, 9 * 60 * 1000); // 9 minutes
+}
 
 async function bootstrap() {
   // Start server listener first so UI proxy always connects
@@ -133,6 +166,9 @@ async function bootstrap() {
 
     // Start telegram bot
     await startBot(app);
+
+    // Start keep-alive pinger so Render never spins down
+    startKeepAlive();
   });
 
   const shutdown = async (signal: string) => {
