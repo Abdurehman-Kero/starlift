@@ -4,12 +4,14 @@ import { createReferral } from '../../services/referral.service';
 import { prisma } from '../../database/client';
 import logger from '../../config/logger';
 
-function escapeMarkdownV2(text: string): string {
-  return text.replace(/[_*[\]()~`>#+\-=|{}.!\\]/g, '\\$&');
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
 export function registerStartCommand(bot: Telegraf) {
-  // Handler for /start command
   bot.command('start', async (ctx: Context) => {
     if (!ctx.from) return;
 
@@ -26,7 +28,7 @@ export function registerStartCommand(bot: Telegraf) {
         lastName,
       });
 
-      // Parse deep link payload for referral code (e.g. /start 8CFA1233E1)
+      // Parse deep link payload for referral code
       const message = ctx.message;
       let referralCode: string | undefined;
 
@@ -60,26 +62,26 @@ export function registerStartCommand(bot: Telegraf) {
         }
       }
 
-      const escapedName = escapeMarkdownV2(firstName);
-      const escapedCode = escapeMarkdownV2(participant.referralCode);
+      const name = escapeHtml(firstName);
+      const code = escapeHtml(participant.referralCode);
 
       const greeting = isNew
-        ? `🌟 *Welcome to NilePixel StarLift, ${escapedName}\\!*`
-        : `👋 *Welcome back, ${escapedName}\\!*`;
+        ? `🌟 <b>Welcome to NilePixel StarLift, ${name}!</b>`
+        : `👋 <b>Welcome back, ${name}!</b>`;
 
       const welcomeText =
         `${greeting}\n\n` +
-        `You are registered for the *StarLift Project Showcase Challenge* \\(Nov 15 – Nov 30, 2026\\)\\!\n\n` +
-        `🔑 *Your Referral Code:* \`${escapedCode}\`\n\n` +
-        `📊 *How the 70/30 Scoring Works:*\n` +
-        `• 🤝 *Referrals \\(70%\\):* Earn points for every member who joins @NilePixelTech using your personal link\\.\n` +
-        `• ❤️ *Reactions \\(30%\\):* Earn points from channel reactions on your showcased project post\\.\n\n` +
-        `🚀 *Get Started:*\n` +
-        `1\\. Tap *Get Invite Link* below to get your channel invitation link\\.\n` +
-        `2\\. Share with friends and developer groups\\.\n` +
-        `3\\. Monitor your rank in real\\-time with *My Stats*\\!`;
+        `You are registered for the <b>StarLift Project Showcase Challenge</b> (Nov 15 – Nov 30, 2026)!\n\n` +
+        `🔑 <b>Your Referral Code:</b> <code>${code}</code>\n\n` +
+        `📊 <b>How the 70/30 Scoring Works:</b>\n` +
+        `• 🤝 <b>Referrals (70%):</b> Earn points for every member who joins @NilePixelTech using your personal link.\n` +
+        `• ❤️ <b>Reactions (30%):</b> Earn points from channel reactions on your showcased project post.\n\n` +
+        `🚀 <b>Get Started:</b>\n` +
+        `1. Tap <b>Get Invite Link</b> below to get your channel invitation link.\n` +
+        `2. Share with friends and developer groups.\n` +
+        `3. Monitor your rank in real-time with <b>My Stats</b>!`;
 
-      await ctx.replyWithMarkdownV2(
+      await ctx.replyWithHTML(
         welcomeText,
         Markup.inlineKeyboard([
           [
@@ -104,16 +106,15 @@ export function registerStartCommand(bot: Telegraf) {
     }
   });
 
-  // Callback query handler for returning to main start menu
   bot.action('cmd_start', async (ctx: Context) => {
     try {
       await ctx.answerCbQuery();
       if (!ctx.from) return;
 
-      const firstName = escapeMarkdownV2(ctx.from.first_name ?? 'Contestant');
-      await ctx.replyWithMarkdownV2(
-        `🌟 *NilePixel StarLift \\- Main Menu*\n\n` +
-          `Hello ${firstName}\\! Select an option below to manage your StarLift challenge entry:`,
+      const name = escapeHtml(ctx.from.first_name ?? 'Contestant');
+      await ctx.replyWithHTML(
+        `🌟 <b>NilePixel StarLift — Main Menu</b>\n\n` +
+          `Hello ${name}! Select an option below to manage your StarLift challenge entry:`,
         Markup.inlineKeyboard([
           [
             Markup.button.callback('🔗 Get Invite Link', 'cmd_mylink'),

@@ -4,8 +4,11 @@ import { calculateScores } from '../../services/scoring.service';
 import { getActiveInviteLink } from '../../services/invitation.service';
 import logger from '../../config/logger';
 
-function escapeMarkdownV2(text: string): string {
-  return text.replace(/[_*[\]()~`>#+\-=|{}.!\\]/g, '\\$&');
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
 async function handleStats(ctx: Context) {
@@ -36,36 +39,36 @@ async function handleStats(ctx: Context) {
     const reactionCount = myScore?.reactionCount ?? 0;
 
     const linkText = activeLink
-      ? `\`${escapeMarkdownV2(activeLink.inviteLink)}\``
-      : '_Use /mylink or tap button below to generate one_';
+      ? `<code>${escapeHtml(activeLink.inviteLink)}</code>`
+      : '<i>Use /mylink or tap button below to generate one</i>';
 
     const milestoneMsg =
       referralCount === 0
-        ? '🎯 *Next Goal:* Get your first invite to appear on the leaderboard\\!'
+        ? '🎯 <b>Next Goal:</b> Get your first invite to appear on the leaderboard!'
         : referralCount < 5
-        ? '📈 *Great start\\!* Keep inviting developers to climb higher\\!'
+        ? '📈 <b>Great start!</b> Keep inviting developers to climb higher!'
         : referralCount < 15
-        ? "🔥 *You're on fire\\!* Top prize positions are within reach\\!"
-        : '🏆 *Outstanding performance\\!* A true StarLift showcase champion\\!';
+        ? "🔥 <b>You're on fire!</b> Top prize positions are within reach!"
+        : '🏆 <b>Outstanding performance!</b> A true StarLift showcase champion!';
 
-    const escapedName = escapeMarkdownV2(participant.firstName);
-    const escapedCode = escapeMarkdownV2(participant.referralCode);
+    const name = escapeHtml(participant.firstName);
+    const code = escapeHtml(participant.referralCode);
 
     const text =
-      `📊 *StarLift Contestant Statistics*\n\n` +
-      `👤 *Contestant:* ${escapedName}\n` +
-      `🔑 *Referral Code:* \`${escapedCode}\`\n\n` +
-      `👥 *Confirmed Referrals:* *${referralCount}* joins\n` +
-      `❤️ *Project Reactions:* *${reactionCount}* reactions\n` +
-      `🏅 *Current Standing:* *Rank #${rank}* of ${totalParticipants} contestants\n\n` +
-      `📈 *Composite Score Breakdown:*\n` +
-      `• 🤝 *Referral Score \\(70%\\):* \`${referralScore} / 70.0 pts\`\n` +
-      `• ❤️ *Reaction Score \\(30%\\):* \`${reactionScore} / 30.0 pts\`\n` +
-      `• 🎯 *Total Score:* *${finalScore} pts*\n\n` +
+      `📊 <b>StarLift Contestant Statistics</b>\n\n` +
+      `👤 <b>Contestant:</b> ${name}\n` +
+      `🔑 <b>Referral Code:</b> <code>${code}</code>\n\n` +
+      `👥 <b>Confirmed Referrals:</b> <b>${referralCount}</b> joins\n` +
+      `❤️ <b>Project Reactions:</b> <b>${reactionCount}</b> reactions\n` +
+      `🏅 <b>Current Standing:</b> <b>Rank #${rank}</b> of ${totalParticipants} contestants\n\n` +
+      `📈 <b>Composite Score Breakdown:</b>\n` +
+      `• 🤝 <b>Referral Score (70%):</b> <code>${referralScore} / 70.0 pts</code>\n` +
+      `• ❤️ <b>Reaction Score (30%):</b> <code>${reactionScore} / 30.0 pts</code>\n` +
+      `• 🎯 <b>Total Score:</b> <b>${finalScore} pts</b>\n\n` +
       `${milestoneMsg}\n\n` +
-      `🔗 *Your Personal Link:*\n${linkText}`;
+      `🔗 <b>Your Personal Link:</b>\n${linkText}`;
 
-    await ctx.replyWithMarkdownV2(
+    await ctx.replyWithHTML(
       text,
       Markup.inlineKeyboard([
         [

@@ -2,8 +2,11 @@ import { Context, Markup, Telegraf } from 'telegraf';
 import { calculateScores } from '../../services/scoring.service';
 import logger from '../../config/logger';
 
-function escapeMarkdownV2(text: string): string {
-  return text.replace(/[_*[\]()~`>#+\-=|{}.!\\]/g, '\\$&');
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
 const MEDALS = ['🥇', '🥈', '🥉'];
@@ -22,22 +25,22 @@ async function handleLeaderboard(ctx: Context) {
     }
 
     const lines = top10.map((entry) => {
-      const medal = MEDALS[entry.rank - 1] ?? `*#${entry.rank}*`;
-      const name = escapeMarkdownV2(
+      const medal = MEDALS[entry.rank - 1] ?? `<b>#${entry.rank}</b>`;
+      const name = escapeHtml(
         entry.username ? `@${entry.username}` : entry.firstName
       );
       const points = entry.finalScore.toFixed(1);
-      return `${medal} ${name} \\— *${entry.referralCount}* refs \\(\`${points} pts\`\\)`;
+      return `${medal} ${name} — <b>${entry.referralCount}</b> refs (<code>${points} pts</code>)`;
     });
 
     const header =
-      `🏆 *StarLift Competition Leaderboard*\n` +
-      `_Top 10 Contestants \\(70% Referrals \\+ 30% Reactions\\)_\n\n` +
+      `🏆 <b>StarLift Competition Leaderboard</b>\n` +
+      `<i>Top 10 Contestants (70% Referrals + 30% Reactions)</i>\n\n` +
       lines.join('\n') +
-      `\n\n⏳ *Challenge Deadline:* November 30, 2026\n` +
-      `_Rankings update live as members join through personal links\\._`;
+      `\n\n⏳ <b>Challenge Deadline:</b> November 30, 2026\n` +
+      `<i>Rankings update live as members join through personal links.</i>`;
 
-    await ctx.replyWithMarkdownV2(
+    await ctx.replyWithHTML(
       header,
       Markup.inlineKeyboard([
         [

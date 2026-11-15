@@ -5,8 +5,11 @@ import { getSetting } from '../../services/settings.service';
 import { env } from '../../config/env';
 import logger from '../../config/logger';
 
-function escapeMarkdownV2(text: string): string {
-  return text.replace(/[_*[\]()~`>#+\-=|{}.!\\]/g, '\\$&');
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
 async function handleMyLink(ctx: Context) {
@@ -24,20 +27,20 @@ async function handleMyLink(ctx: Context) {
     // Check for existing active invite link
     const existing = await getActiveInviteLink(participant.id);
     if (existing) {
-      const escapedLink = escapeMarkdownV2(existing.inviteLink);
+      const link = escapeHtml(existing.inviteLink);
       const shareText = encodeURIComponent(
         '🌟 Join me on the NilePixel StarLift Project Showcase Challenge!\nJoin the channel here:'
       );
       const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(existing.inviteLink)}&text=${shareText}`;
 
-      await ctx.replyWithMarkdownV2(
-        `🔗 *Your Personal Invitation Link:*\n\n` +
-          `\`${escapedLink}\`\n\n` +
-          `📢 *How to Use:*\n` +
-          `• Share this link with your friends, colleagues, and developer groups\\.\n` +
-          `• When someone joins @NilePixelTech using this link, our system counts them as your verified referral instantly\\!\n` +
-          `• Every referral contributes *70%* toward your final StarLift composite score\\.\n\n` +
-          `📊 Track your rank anytime with /stats\\.`,
+      await ctx.replyWithHTML(
+        `🔗 <b>Your Personal Invitation Link:</b>\n\n` +
+          `<code>${link}</code>\n\n` +
+          `📢 <b>How to Use:</b>\n` +
+          `• Share this link with your friends, colleagues, and developer groups.\n` +
+          `• When someone joins @NilePixelTech using this link, our system counts them as your verified referral instantly!\n` +
+          `• Every referral contributes <b>70%</b> toward your final StarLift composite score.\n\n` +
+          `📊 Track your rank anytime with /stats.`,
         Markup.inlineKeyboard([
           [Markup.button.url('🚀 Open Channel Invite', existing.inviteLink)],
           [Markup.button.url('📢 Share with Friends', shareUrl)],
@@ -50,7 +53,7 @@ async function handleMyLink(ctx: Context) {
       return;
     }
 
-    // Retrieve configured Channel ID (check DB settings first, fallback to env)
+    // Retrieve configured Channel ID
     const settingChannelId = await getSetting('TELEGRAM_CHANNEL_ID');
     const rawChannelId = (settingChannelId || env.TELEGRAM_CHANNEL_ID || '').trim();
 
@@ -62,7 +65,6 @@ async function handleMyLink(ctx: Context) {
       return;
     }
 
-    // Format channelId: accept numeric channel ID (-100...) or @public_username
     let targetChatId: string | number = rawChannelId;
     if (/^-?\d+$/.test(rawChannelId)) {
       if (!rawChannelId.startsWith('-')) {
@@ -73,7 +75,6 @@ async function handleMyLink(ctx: Context) {
       targetChatId = `@${rawChannelId}`;
     }
 
-    // Telegram name limit is 32 characters
     const linkName = `StarLift_${participant.referralCode}`.slice(0, 32);
 
     try {
@@ -89,20 +90,20 @@ async function handleMyLink(ctx: Context) {
         telegramLinkId: created.name,
       });
 
-      const escapedLink = escapeMarkdownV2(created.invite_link);
+      const link = escapeHtml(created.invite_link);
       const shareText = encodeURIComponent(
         '🌟 Join me on the NilePixel StarLift Project Showcase Challenge!\nJoin the channel here:'
       );
       const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(created.invite_link)}&text=${shareText}`;
 
-      await ctx.replyWithMarkdownV2(
-        `🔗 *Your Personal Invitation Link:*\n\n` +
-          `\`${escapedLink}\`\n\n` +
-          `📢 *How to Use:*\n` +
-          `• Share this link with your friends, colleagues, and developer groups\\.\n` +
-          `• When someone joins @NilePixelTech using this link, our system counts them as your verified referral instantly\\!\n` +
-          `• Every referral contributes *70%* toward your final StarLift composite score\\.\n\n` +
-          `📊 Track your rank anytime with /stats\\.`,
+      await ctx.replyWithHTML(
+        `🔗 <b>Your Personal Invitation Link:</b>\n\n` +
+          `<code>${link}</code>\n\n` +
+          `📢 <b>How to Use:</b>\n` +
+          `• Share this link with your friends, colleagues, and developer groups.\n` +
+          `• When someone joins @NilePixelTech using this link, our system counts them as your verified referral instantly!\n` +
+          `• Every referral contributes <b>70%</b> toward your final StarLift composite score.\n\n` +
+          `📊 Track your rank anytime with /stats.`,
         Markup.inlineKeyboard([
           [Markup.button.url('🚀 Open Channel Invite', created.invite_link)],
           [Markup.button.url('📢 Share with Friends', shareUrl)],

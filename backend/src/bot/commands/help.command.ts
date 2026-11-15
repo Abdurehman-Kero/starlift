@@ -3,33 +3,33 @@ import logger from '../../config/logger';
 
 async function handleHelp(ctx: Context) {
   try {
-    await ctx.replyWithMarkdownV2(
-      `ℹ️ *NilePixel StarLift — Challenge Guide & Rules*\n\n` +
-        `🌟 *Event:* NilePixel StarLift Project Showcase Challenge\n` +
-        `📅 *Timeline:* November 15 – November 30, 2026\n` +
-        `📢 *Target Channel:* @NilePixelTech\n\n` +
-        `*Available Commands:*\n` +
-        `/start \\- Register and view your referral code\n` +
-        `/mylink \\- Get your personal channel invite link\n` +
-        `/stats \\- Check your live referrals, points & rank\n` +
-        `/leaderboard \\- See top 10 competition standings\n` +
-        `/help \\- Show this guide and scoring rules\n\n` +
-        `*How Scoring Works \\(70/30 Formula\\):*\n` +
-        `Your final score \\(0 – 100 pts\\) is computed dynamically:\n` +
-        `1\\. 🤝 *Referrals \\(70%\\):* Points based on verified channel joins via your /mylink\\.\n` +
-        `   \`(Your Referrals / Top Referrals) × 100 × 0.70\`\n` +
-        `2\\. ❤️ *Reactions \\(30%\\):* Points from Telegram reactions on your showcased project post in the channel\\.\n` +
-        `   \`(Your Reactions / Top Reactions) × 100 × 0.30\`\n\n` +
-        `*How to Participate:*\n` +
-        `1\\. Send /mylink to receive your personal channel invite link\\.\n` +
-        `2\\. Share your link with friends, groups, and developers\\.\n` +
-        `3\\. When they join @NilePixelTech, you are credited automatically\\!\n` +
-        `4\\. Top 3 contestants win the StarLift Project Showcase prizes\\!\n\n` +
-        `🛡️ *Fair Play Rules:*\n` +
-        `• Only genuine members joining via your personal link are credited\\.\n` +
-        `• If an invited member leaves the channel, the referral is revoked\\.\n` +
-        `• Self\\-referrals and fake bot accounts are automatically disqualified\\.\n\n` +
-        `💬 *Support & Project Submissions:*\n` +
+    await ctx.replyWithHTML(
+      `ℹ️ <b>NilePixel StarLift — Challenge Guide & Rules</b>\n\n` +
+        `🌟 <b>Event:</b> NilePixel StarLift Project Showcase Challenge\n` +
+        `📅 <b>Timeline:</b> November 15 – November 30, 2026\n` +
+        `📢 <b>Target Channel:</b> @NilePixelTech\n\n` +
+        `<b>Available Commands:</b>\n` +
+        `/start - Register and view your referral code\n` +
+        `/mylink - Get your personal channel invite link\n` +
+        `/stats - Check your live referrals, points & rank\n` +
+        `/leaderboard - See top 10 competition standings\n` +
+        `/help - Show this guide and scoring rules\n\n` +
+        `<b>How Scoring Works (70/30 Formula):</b>\n` +
+        `Your final score (0 – 100 pts) is computed dynamically:\n` +
+        `1. 🤝 <b>Referrals (70%):</b> Points based on verified channel joins via your /mylink.\n` +
+        `   <code>(Your Referrals / Top Referrals) × 100 × 0.70</code>\n` +
+        `2. ❤️ <b>Reactions (30%):</b> Points from Telegram reactions on your showcased project post in the channel.\n` +
+        `   <code>(Your Reactions / Top Reactions) × 100 × 0.30</code>\n\n` +
+        `<b>How to Participate:</b>\n` +
+        `1. Send /mylink to receive your personal channel invite link.\n` +
+        `2. Share your link with friends, groups, and developers.\n` +
+        `3. When they join @NilePixelTech, you are credited automatically!\n` +
+        `4. Top 3 contestants win the StarLift Project Showcase prizes!\n\n` +
+        `🛡️ <b>Fair Play Rules:</b>\n` +
+        `• Only genuine members joining via your personal link are credited.\n` +
+        `• If an invited member leaves the channel, the referral is revoked.\n` +
+        `• Self-referrals and fake bot accounts are automatically disqualified.\n\n` +
+        `💬 <b>Support & Project Submissions:</b>\n` +
         `• Project submissions & questions: @NilePixelSupportBot\n` +
         `• Official Announcements: @NilePixelTech`,
       Markup.inlineKeyboard([
