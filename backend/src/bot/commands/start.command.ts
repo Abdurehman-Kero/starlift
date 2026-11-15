@@ -2,6 +2,7 @@ import { Context, Markup, Telegraf } from 'telegraf';
 import { getOrCreateParticipant, getParticipantByReferralCode } from '../../services/participant.service';
 import { createReferral } from '../../services/referral.service';
 import { getSubmissionByParticipantId } from '../../services/showcase.service';
+import { getActiveInviteLink } from '../../services/invitation.service';
 import { userSessions } from './submit.command';
 import { prisma } from '../../database/client';
 import logger from '../../config/logger';
@@ -65,100 +66,89 @@ async function renderStartScreen(ctx: Context) {
     }
 
     const name = escapeHtml(firstName);
-    const code = escapeHtml(participant.referralCode);
 
     // Check if participant has already submitted their project specification
     const submission = await getSubmissionByParticipantId(participant.id);
 
+    // If NOT submitted yet: Strict single-focus project submission prompt
     if (!submission) {
-      // Automatically prime wizard so the very next message they send is their project title!
       userSessions.set(String(ctx.from.id), {
         step: 'TITLE',
         imageUrl: null,
       });
 
       const welcomeText =
-        `🌟 <b>Welcome to NilePixel StarLift, ${name}!</b>\n\n` +
-        `You are officially registered for the <b>StarLift Project Showcase Challenge</b>!\n` +
-        `🔑 <b>Your Referral Code:</b> <code>${code}</code>\n\n` +
+        `<b>Welcome to NilePixel StarLift, ${name}.</b>\n\n` +
+        `You are officially registered for the <b>Upwork First Job Challenge</b>.\n\n` +
+        `To receive your personal channel invite link and compete on the leaderboard, please submit your project specification or developer portfolio.\n\n` +
         `━━━━━━━━━━━━━━━━━━━━━━\n` +
-        `🚀 <b>PROJECT SHOWCASE SPECIFICATION (Step 1 of 4)</b>\n\n` +
-        `To feature your project on <b>@NilePixelTech</b> and unlock your personal referral invite link, let's set up your project details:\n\n` +
-        `📸 <i>Tip: You will be asked to attach a screenshot or banner photo at Step 4 (or send one anytime) to boost your votes by up to 5x!</i>\n\n` +
-        `━━━━━━━━━━━━━━━━━━━━━━\n` +
-        `🏷️ <b>What is your Project Title?</b>\n` +
-        `<i>Please reply with the name of your project (e.g. <b>NilePay</b>):</i>`;
+        `<b>Step 1 of 4: Project Title</b>\n` +
+        `Please reply with your project title (or your name for a developer portfolio):\n` +
+        `(e.g., <b>NilePay Gateway</b>)`;
 
       await ctx.replyWithHTML(
         welcomeText,
         Markup.inlineKeyboard([
-          [
-            Markup.button.callback('💡 Step-by-Step Wizard', 'cmd_submit'),
-            Markup.button.callback('ℹ️ Guide & Rules', 'cmd_help'),
-          ],
-          [
-            Markup.button.url('📢 Official Channel (@NilePixelTech)', 'https://t.me/NilePixelTech'),
-          ],
+          [Markup.button.callback('Cancel', 'cancel_submission')],
         ])
       );
       return;
     }
 
-    // Already submitted: Show project status and image advice if missing
+    // Already submitted: Show clean dashboard with project summary and invite link
     const subTitle = escapeHtml(submission.projectTitle || 'StarLift Showcase Project');
     const subUrl = escapeHtml(submission.projectUrl);
 
     let bannerNotice = '';
     if (submission.imageUrl) {
-      bannerNotice = `🖼️ <b>Showcase Banner:</b> Attached ✅\n`;
+      bannerNotice = `• <b>Banner Image:</b> Attached\n`;
     } else {
       bannerNotice =
-        `⚠️ <b>Showcase Banner:</b> <i>Not attached yet</i>\n` +
-        `👉 <b>Strongly recommended:</b> <i>Send a screenshot/photo to this chat now to attach it for higher votes!</i>\n`;
+        `• <b>Banner Image:</b> Not attached (send a photo anytime to attach one)\n`;
     }
 
     let statusSection = '';
     if (submission.status === 'published' && submission.channelPostUrl) {
       const reactions = submission.reactions.reduce((sum, r) => sum + r.reactionCount, 0);
       statusSection =
-        `🚀 <b>Your Project is LIVE on @NilePixelTech!</b>\n` +
-        `📢 <b>Channel Post:</b> <a href="${submission.channelPostUrl}">View Live Post</a>\n` +
-        `❤️ <b>Community Reactions:</b> <b>${reactions}</b> reactions (synced live!)\n`;
+        `• <b>Status:</b> Live on @NilePixelTech\n` +
+        `• <b>Reactions:</b> ${reactions} community reactions\n`;
     } else {
       statusSection =
-        `⏳ <b>Review Status:</b> <b>${submission.status.toUpperCase()}</b>\n` +
-        `<i>Our team is reviewing your specification. You will be notified the instant it is published to @NilePixelTech!</i>\n`;
+        `• <b>Status:</b> ${submission.status.toUpperCase()} (Under Review)\n`;
     }
 
+    const activeLink = await getActiveInviteLink(participant.id);
+    const linkText = activeLink
+      ? `<code>${escapeHtml(activeLink.inviteLink)}</code>`
+      : '<i>Tap "Get Invite Link" below to generate your link</i>';
+
     const existingText =
-      `👋 <b>Welcome back, ${name}!</b>\n\n` +
-      `🚀 <b>Your StarLift Project Showcase:</b>\n` +
-      `🏷️ <b>Title:</b> <b>${subTitle}</b>\n` +
-      `🔗 <b>Demo:</b> <code>${subUrl}</code>\n` +
+      `<b>Welcome back, ${name}.</b>\n\n` +
+      `<b>Your Project Showcase:</b>\n` +
+      `• <b>Title:</b> ${subTitle}\n` +
+      `• <b>Demo / Portfolio:</b> <code>${subUrl}</code>\n` +
       `${bannerNotice}` +
       `${statusSection}\n` +
-      `📢 <b>Showcase Announcement:</b>\n` +
-      `Please keep an eye on <b>@NilePixelTech</b> for your project approval!\n` +
-      `If not announced on the channel, contact: <b>@NilePixelSupportBot</b>.\n\n` +
-      `━━━━━━━━━━━━━━━━━━━━━━\n` +
-      `🤝 <b>NEXT STEP: EARN YOUR 70% REFERRAL SCORE</b>\n` +
-      `Share your personal channel invite link with friends and developers. Every verified join boosts your ranking!`;
+      `<b>Your Channel Invite Link:</b>\n` +
+      `${linkText}\n\n` +
+      `Share your personal invite link to gather support and climb the leaderboard.`;
 
     const keyboardButtons = [];
     if (submission.channelPostUrl) {
-      keyboardButtons.push([Markup.button.url('🚀 View Channel Post', submission.channelPostUrl)]);
+      keyboardButtons.push([Markup.button.url('View Live Showcase Post', submission.channelPostUrl)]);
     }
     keyboardButtons.push([
-      Markup.button.callback('🔗 Get My Invite Link', 'cmd_mylink'),
-      Markup.button.callback('📊 My Stats & Rank', 'cmd_stats'),
+      Markup.button.callback('Get Invite Link', 'cmd_mylink'),
+      Markup.button.callback('My Stats & Rank', 'cmd_stats'),
     ]);
     keyboardButtons.push([
-      Markup.button.callback('💡 Update Project Details', 'cmd_submit'),
-      Markup.button.callback('🏆 Leaderboard', 'cmd_leaderboard'),
+      Markup.button.callback('Update Project Details', 'cmd_update_submit'),
+      Markup.button.callback('Leaderboard', 'cmd_leaderboard'),
     ]);
     keyboardButtons.push([
-      Markup.button.url('📢 Official Channel (@NilePixelTech)', 'https://t.me/NilePixelTech'),
-      Markup.button.url('💬 Contact Support (@NilePixelSupportBot)', 'https://t.me/NilePixelSupportBot'),
+      Markup.button.url('Official Channel', 'https://t.me/NilePixelTech'),
+      Markup.button.url('Contact Support', 'https://t.me/NilePixelSupportBot'),
     ]);
 
     await ctx.replyWithHTML(existingText, Markup.inlineKeyboard(keyboardButtons));

@@ -9,7 +9,7 @@ function escapeHtml(text: string): string {
     .replace(/>/g, '&gt;');
 }
 
-const MEDALS = ['🥇', '🥈', '🥉'];
+const MEDALS = ['#1', '#2', '#3'];
 
 async function handleLeaderboard(ctx: Context) {
   try {
@@ -18,38 +18,38 @@ async function handleLeaderboard(ctx: Context) {
 
     if (top10.length === 0) {
       await ctx.reply(
-        '🌟 No participants ranked on the leaderboard yet.\n\n' +
-          'Be the first! Use /mylink to invite friends and claim the #1 spot.'
+        'No participants ranked on the leaderboard yet.\n\n' +
+          'Be the first! Use /mylink to invite friends and claim the top spot.'
       );
       return;
     }
 
     const lines = top10.map((entry) => {
-      const medal = MEDALS[entry.rank - 1] ?? `<b>#${entry.rank}</b>`;
+      const rankTag = MEDALS[entry.rank - 1] ?? `#${entry.rank}`;
       const name = escapeHtml(
         entry.username ? `@${entry.username}` : entry.firstName
       );
       const points = entry.finalScore.toFixed(1);
-      return `${medal} ${name} — <b>${entry.referralCount}</b> refs (<code>${points} pts</code>)`;
+      return `<b>${rankTag}</b> ${name} — <b>${entry.referralCount}</b> referrals, <b>${entry.reactionCount}</b> reactions (<code>${points} pts</code>)`;
     });
 
     const header =
-      `🏆 <b>StarLift Competition Leaderboard</b>\n` +
-      `<i>Top 10 Contestants (70% Referrals + 30% Reactions)</i>\n\n` +
+      `<b>StarLift Competition Leaderboard</b>\n` +
+      `<i>Top 10 Contestants</i>\n\n` +
       lines.join('\n') +
-      `\n\n⏳ <b>Challenge Deadline:</b> November 30, 2026\n` +
-      `<i>Rankings update live as members join through personal links.</i>`;
+      `\n\n<b>Challenge Deadline:</b> November 30, 2026\n` +
+      `<i>Rankings update automatically based on verified joins and reactions.</i>`;
 
     await ctx.replyWithHTML(
       header,
       Markup.inlineKeyboard([
         [
-          Markup.button.callback('📊 My Stats & Rank', 'cmd_stats'),
-          Markup.button.callback('🔗 Get My Invite Link', 'cmd_mylink'),
+          Markup.button.callback('My Stats & Rank', 'cmd_stats'),
+          Markup.button.callback('Get My Invite Link', 'cmd_mylink'),
         ],
         [
-          Markup.button.callback('🔄 Refresh Leaderboard', 'cmd_leaderboard'),
-          Markup.button.callback('🏠 Main Menu', 'cmd_start'),
+          Markup.button.callback('Refresh Leaderboard', 'cmd_leaderboard'),
+          Markup.button.callback('Main Menu', 'cmd_start'),
         ],
       ])
     );

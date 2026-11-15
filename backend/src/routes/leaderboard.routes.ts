@@ -49,26 +49,35 @@ router.patch(
       });
     }
 
-    const reaction = await prisma.projectReaction.upsert({
+    const existingReaction = await prisma.projectReaction.findFirst({
       where: {
-        id: (
-          await prisma.projectReaction.findFirst({
-            where: {
-              submissionId: submission.id,
-              source: source ?? 'manual',
-            },
-          })
-        )?.id ?? 0,
-      },
-      update: { reactionCount, recordedBy: req.admin!.email },
-      create: {
-        submissionId: submission.id,
-        participantId,
-        reactionCount,
-        source: source ?? 'manual',
-        recordedBy: req.admin!.email,
+        OR: [
+          { submissionId: submission.id },
+          { participantId: participant.id },
+        ],
       },
     });
+
+    const reaction = existingReaction
+      ? await prisma.projectReaction.update({
+          where: { id: existingReaction.id },
+          data: {
+            submissionId: submission.id,
+            participantId: participant.id,
+            reactionCount,
+            source: source ?? 'manual_admin',
+            recordedBy: req.admin!.email,
+          },
+        })
+      : await prisma.projectReaction.create({
+          data: {
+            submissionId: submission.id,
+            participantId: participant.id,
+            reactionCount,
+            source: source ?? 'manual_admin',
+            recordedBy: req.admin!.email,
+          },
+        });
 
     await prisma.activityLog.create({
       data: {

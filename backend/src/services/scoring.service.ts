@@ -28,21 +28,29 @@ export async function calculateScores(): Promise<ScoreEntry[]> {
     include: {
       _count: { select: { referralsMade: { where: { status: 'confirmed' } } } },
       reactions: true,
+      projectSubmission: { include: { reactions: true } },
     },
   });
 
   if (participants.length === 0) return [];
 
-  const data = participants.map((p) => ({
-    id: p.id,
-    telegramId: p.telegramId,
-    username: p.username,
-    firstName: p.firstName,
-    lastName: p.lastName,
-    referralCode: p.referralCode,
-    referralCount: p._count.referralsMade,
-    reactionCount: p.reactions.reduce((sum, r) => sum + r.reactionCount, 0),
-  }));
+  const data = participants.map((p) => {
+    const directReactions = p.reactions.reduce((sum, r) => sum + r.reactionCount, 0);
+    const subReactions =
+      p.projectSubmission?.reactions.reduce((sum, r) => sum + r.reactionCount, 0) || 0;
+    const reactionCount = Math.max(directReactions, subReactions);
+
+    return {
+      id: p.id,
+      telegramId: p.telegramId,
+      username: p.username,
+      firstName: p.firstName,
+      lastName: p.lastName,
+      referralCode: p.referralCode,
+      referralCount: p._count.referralsMade,
+      reactionCount,
+    };
+  });
 
   const maxReferrals = Math.max(...data.map((d) => d.referralCount), 1);
   const maxReactions = Math.max(...data.map((d) => d.reactionCount), 1);

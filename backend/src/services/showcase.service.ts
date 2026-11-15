@@ -291,6 +291,7 @@ export async function syncReactionCountForMessage(channelMessageId: number, tota
     ? await prisma.projectReaction.update({
         where: { id: existingReaction.id },
         data: {
+          participantId: submission.participantId,
           reactionCount: totalCount,
           source: 'telegram_channel_auto',
           recordedBy: 'system_auto_sync',
@@ -378,20 +379,20 @@ export async function notifyAdminsOfNewSubmission(submissionId: number): Promise
   const code = escapeHtml(submission.participant.referralCode);
 
   const adminCard =
-    `📥 <b>NEW SHOWCASE SUBMISSION FOR REVIEW</b>\n\n` +
-    `👨‍💻 <b>Contestant:</b> ${contestantName} (${contestantHandle})\n` +
-    `🆔 <b>Telegram ID:</b> <code>${submission.participant.telegramId.toString()}</code>\n` +
-    `🔑 <b>Referral Code:</b> <code>${code}</code>\n\n` +
-    `🏷️ <b>Title:</b> <b>${title}</b>\n` +
-    `🔗 <b>Demo / Repo:</b> <a href="${projectUrl}">${projectUrl}</a>\n\n` +
-    `💡 <b>Pitch / Description:</b>\n` +
+    `<b>New Showcase Submission for Review</b>\n\n` +
+    `• <b>Contestant:</b> ${contestantName} (${contestantHandle})\n` +
+    `• <b>Telegram ID:</b> <code>${submission.participant.telegramId.toString()}</code>\n` +
+    `• <b>Referral Code:</b> <code>${code}</code>\n\n` +
+    `• <b>Title:</b> <b>${title}</b>\n` +
+    `• <b>Demo / Portfolio:</b> <a href="${projectUrl}">${projectUrl}</a>\n\n` +
+    `<b>Pitch / Description:</b>\n` +
     `${description}\n\n` +
     `━━━━━━━━━━━━━━━━━━━━━━\n` +
     `<i>Tap an action below to process immediately:</i>`;
 
   const keyboard = Markup.inlineKeyboard([
-    [Markup.button.callback('🚀 Directly Publish to @NilePixelTech', `sub_pub:${submission.id}`)],
-    [Markup.button.callback('❌ Ignore / Reject', `sub_ign:${submission.id}`)],
+    [Markup.button.callback('Publish to @NilePixelTech', `sub_pub:${submission.id}`)],
+    [Markup.button.callback('Reject / Ignore', `sub_ign:${submission.id}`)],
   ]);
 
   for (const chatId of adminChatIds) {
@@ -440,21 +441,21 @@ export async function notifyContestantOfAdjustmentRequired(submissionId: number)
     const projectTitle = escapeHtml(submission.projectTitle || 'Your Project');
 
     const dmMessage =
-      `⚠️ <b>Project Specification Update Required</b>\n\n` +
-      `Hello ${contestantName}!\n\n` +
+      `<b>Project Specification Update Required</b>\n\n` +
+      `Hello ${contestantName},\n\n` +
       `Our review committee in the StarLift Administrator Group has reviewed your submission for <b>"${projectTitle}"</b>.\n\n` +
-      `ℹ️ <b>Adjustments Needed:</b>\n` +
-      `Your project showcase details require adjustments before it can be published to @NilePixelTech (for example: refining your pitch description, ensuring your demo link is publicly accessible, or attaching a clear project screenshot/banner).\n\n` +
-      `🔄 <b>How to Resubmit:</b>\n` +
-      `You can update and resubmit your project specification right now! Tap the button below or send <code>/submit</code> to make the adjustments.\n\n` +
-      `💬 If you need guidance, feel free to contact our support team at @NilePixelSupportBot!`;
+      `<b>Adjustments Needed:</b>\n` +
+      `Your project showcase details require adjustments before it can be published to @NilePixelTech (for example: refining your pitch description, ensuring your demo link is accessible, or attaching a clear project screenshot/banner).\n\n` +
+      `<b>How to Resubmit:</b>\n` +
+      `You can update and resubmit your project specification right now. Tap the button below or send /submit to make the adjustments.\n\n` +
+      `If you need guidance, feel free to contact our support team at @NilePixelSupportBot.`;
 
     await bot.telegram.sendMessage(contestantTelegramId, dmMessage, {
       parse_mode: 'HTML',
       reply_markup: Markup.inlineKeyboard([
-        [Markup.button.callback('💡 Update & Resubmit Specification', 'cmd_submit')],
-        [Markup.button.url('💬 Contact Support (@NilePixelSupportBot)', 'https://t.me/NilePixelSupportBot')],
-        [Markup.button.callback('🏠 Main Menu', 'cmd_start')],
+        [Markup.button.callback('Update Project Details', 'cmd_update_submit')],
+        [Markup.button.url('Contact Support (@NilePixelSupportBot)', 'https://t.me/NilePixelSupportBot')],
+        [Markup.button.callback('Main Menu', 'cmd_start')],
       ]).reply_markup,
     });
 

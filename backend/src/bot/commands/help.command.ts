@@ -4,50 +4,43 @@ import logger from '../../config/logger';
 async function handleHelp(ctx: Context) {
   try {
     await ctx.replyWithHTML(
-      `ℹ️ <b>NilePixel StarLift — Challenge Guide & Rules</b>\n\n` +
-        `🌟 <b>Event:</b> NilePixel StarLift Project Showcase Challenge\n` +
-        `📅 <b>Timeline:</b> November 15 – November 30, 2026\n` +
-        `📢 <b>Target Channel:</b> @NilePixelTech\n\n` +
-        `<b>Available Commands:</b>\n` +
-        `/start - Register and open main menu\n` +
-        `/submit - Submit your project showcase entry\n` +
-        `/mylink - Get your personal channel invite link\n` +
-        `/stats - Check your live referrals, points & rank\n` +
-        `/leaderboard - See top 10 competition standings\n` +
-        `/help - Show this guide and scoring rules\n\n` +
-        `<b>How Scoring Works (70/30 Formula):</b>\n` +
-        `Your final score (0 – 100 pts) is computed dynamically:\n` +
-        `1. 🤝 <b>Referrals (70%):</b> Points based on verified channel joins via your /mylink.\n` +
-        `   <code>(Your Referrals / Top Referrals) × 100 × 0.70</code>\n` +
-        `2. ❤️ <b>Reactions (30%):</b> Points from Telegram reactions on your showcased project post in the channel.\n` +
-        `   <code>(Your Reactions / Top Reactions) × 100 × 0.30</code>\n\n` +
-        `<b>How to Participate:</b>\n` +
-        `1. Tap 💡 <b>Submit Project</b> or send <code>/submit</code> to showcase your project.\n` +
-        `2. Tap 🔗 <b>Get Invite Link</b> to receive your personal channel invite link.\n` +
-        `3. Share your link with friends, groups, and developers.\n` +
-        `4. When they join @NilePixelTech, you are credited automatically!\n` +
-        `5. Top 3 contestants win the StarLift Project Showcase prizes!\n\n` +
-        `🛡️ <b>Fair Play Rules:</b>\n` +
+      `<b>NilePixel StarLift — Challenge Guide</b>\n\n` +
+        `• <b>Challenge:</b> Upwork First Job Challenge\n` +
+        `• <b>Period:</b> November 16 – November 30, 2026\n` +
+        `• <b>Official Channel:</b> @NilePixelTech\n\n` +
+        `<b>Commands:</b>\n` +
+        `/start - Open the main menu\n` +
+        `/submit - Submit or update your project specification\n` +
+        `/mylink - View your personal channel invitation link\n` +
+        `/stats - Check your referrals, reactions, points & rank\n` +
+        `/leaderboard - View the top 10 contestants\n` +
+        `/help - Show this guide\n\n` +
+        `<b>How to Compete:</b>\n` +
+        `1. Submit your project or developer portfolio specification via /submit.\n` +
+        `2. Once approved, your project card is featured on @NilePixelTech.\n` +
+        `3. Share your personal invite link from /mylink to invite friends.\n` +
+        `4. Top 3 contestants win the Upwork first job contracts and 5-star reviews from NilePixel Technologies.\n\n` +
+        `<b>Fair Play:</b>\n` +
         `• Only genuine members joining via your personal link are credited.\n` +
         `• If an invited member leaves the channel, the referral is revoked.\n` +
-        `• Self-referrals and fake bot accounts are automatically disqualified.\n\n` +
-        `📢 <b>Official Channel:</b> @NilePixelTech\n` +
-        `💬 <b>Questions & Support:</b> @NilePixelSupportBot`,
+        `• Self-referrals and fake bot accounts are disqualified.\n\n` +
+        `• <b>Official Channel:</b> @NilePixelTech\n` +
+        `• <b>Support & Questions:</b> @NilePixelSupportBot`,
       Markup.inlineKeyboard([
         [
-          Markup.button.callback('💡 Submit Project', 'cmd_submit'),
-          Markup.button.callback('🔗 Get My Invite Link', 'cmd_mylink'),
+          Markup.button.callback('Submit Project', 'cmd_submit'),
+          Markup.button.callback('Get Invite Link', 'cmd_mylink'),
         ],
         [
-          Markup.button.callback('📊 My Stats & Rank', 'cmd_stats'),
-          Markup.button.callback('🏆 Leaderboard', 'cmd_leaderboard'),
+          Markup.button.callback('My Stats & Rank', 'cmd_stats'),
+          Markup.button.callback('Leaderboard', 'cmd_leaderboard'),
         ],
         [
-          Markup.button.url('📢 Channel (@NilePixelTech)', 'https://t.me/NilePixelTech'),
-          Markup.button.url('💬 Support (@NilePixelSupportBot)', 'https://t.me/NilePixelSupportBot'),
+          Markup.button.url('Official Channel', 'https://t.me/NilePixelTech'),
+          Markup.button.url('Contact Support', 'https://t.me/NilePixelSupportBot'),
         ],
         [
-          Markup.button.callback('🏠 Main Menu', 'cmd_start'),
+          Markup.button.callback('Main Menu', 'cmd_start'),
         ],
       ])
     );

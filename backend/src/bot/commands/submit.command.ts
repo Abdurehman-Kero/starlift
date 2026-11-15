@@ -5,6 +5,7 @@ import {
   createOrUpdateSubmission,
   notifyAdminsOfNewSubmission,
 } from '../../services/showcase.service';
+import { getActiveInviteLink } from '../../services/invitation.service';
 import logger from '../../config/logger';
 
 function escapeHtml(text: string): string {
@@ -15,7 +16,7 @@ function escapeHtml(text: string): string {
 }
 
 interface SubmissionSession {
-  step: 'TITLE' | 'URL' | 'DESCRIPTION' | 'IMAGE';
+  step: 'TITLE' | 'URL' | 'DESCRIPTION' | 'IMAGE' | 'CONFIRM';
   projectTitle?: string;
   projectUrl?: string;
   description?: string;
@@ -26,7 +27,44 @@ interface SubmissionSession {
 export const userSessions = new Map<string, SubmissionSession>();
 
 /**
- * Completes the submission, saves to database, notifies contestant, and alerts administrator group
+ * Presents a clear summary review card and requires tapping [Submit Specification]
+ */
+async function renderReviewAndConfirm(
+  ctx: Context,
+  participantId: number,
+  session: SubmissionSession
+) {
+  session.step = 'CONFIRM';
+
+  const title = escapeHtml(session.projectTitle || 'My Project');
+  const url = escapeHtml(session.projectUrl || '');
+  const pitch = escapeHtml(session.description || '');
+  const imageStatus = session.imageUrl
+    ? 'Attached (screenshot/banner)'
+    : 'None (text only)';
+
+  const text =
+    `<b>Review Your Project Specification</b>\n\n` +
+    `• <b>Title:</b> ${title}\n` +
+    `• <b>Demo / Portfolio:</b> <code>${url}</code>\n` +
+    `• <b>Description:</b>\n${pitch}\n` +
+    `• <b>Banner Image:</b> ${imageStatus}\n\n` +
+    `Please check the details above. When ready, tap <b>Submit Specification</b> below to send your project for review.`;
+
+  await ctx.replyWithHTML(
+    text,
+    Markup.inlineKeyboard([
+      [Markup.button.callback('Submit Specification', 'confirm_submit')],
+      [
+        Markup.button.callback('Start Over', 'cmd_update_submit'),
+        Markup.button.callback('Cancel', 'cancel_submission'),
+      ],
+    ])
+  );
+}
+
+/**
+ * Finalizes the submission, saves to database, notifies contestant, and alerts administrator group
  */
 async function finalizeSubmission(
   ctx: Context,
@@ -45,7 +83,7 @@ async function finalizeSubmission(
     status: 'pending',
   });
 
-  // Alert Administrator Group & Admin chats
+  // Alert Administrator Group
   try {
     await notifyAdminsOfNewSubmission(submission.id);
   } catch (adminAlertErr) {
@@ -53,136 +91,112 @@ async function finalizeSubmission(
   }
 
   const title = escapeHtml(submission.projectTitle || 'Showcase Project');
-  const url = escapeHtml(submission.projectUrl);
-  const desc = escapeHtml(submission.description);
+  const activeLink = await getActiveInviteLink(participantId);
+  const linkText = activeLink
+    ? `<code>${escapeHtml(activeLink.inviteLink)}</code>`
+    : `<i>Tap "Get Invite Link" below to generate your link</i>`;
 
   const bannerNotice = submission.imageUrl
-    ? `🖼️ <b>Screenshot/Banner:</b> Attached ✅\n`
-    : `⚠️ <b>Screenshot/Banner:</b> <i>Not attached (you can send a photo anytime to attach it)</i>\n`;
+    ? `• <b>Banner Image:</b> Attached\n`
+    : `• <b>Banner Image:</b> Not attached (you can send a photo anytime to attach one)\n`;
 
   await ctx.replyWithHTML(
-    `🎉 <b>PROJECT SPECIFICATION SUBMITTED SUCCESSFULLY!</b>\n\n` +
-      `🏷️ <b>Project Title:</b> <b>${title}</b>\n` +
-      `🔗 <b>Demo / Repo URL:</b> <code>${url}</code>\n` +
-      `${bannerNotice}` +
-      `💡 <b>Pitch Description:</b>\n${desc}\n\n` +
-      `⏳ <b>Status:</b> <b>UNDER REVIEW</b>\n\n` +
-      `✅ Your project specification has been delivered directly to the <b>StarLift Review Committee</b>!\n\n` +
-      `📢 <b>What to do now:</b>\n` +
-      `Please wait and keep an eye on our official channel <b>@NilePixelTech</b> for your showcase announcement and approval.\n\n` +
-      `💬 <b>Need Help or Follow-up?</b>\n` +
-      `If your project showcase is not announced on @NilePixelTech or you have any questions, please contact our support team at:\n` +
-      `👉 <b>@NilePixelSupportBot</b>\n\n` +
+    `<b>Project Specification Submitted</b>\n\n` +
+      `Your project <b>${title}</b> has been received and is now under review.\n\n` +
+      `• <b>Status:</b> Under Review\n` +
+      `${bannerNotice}\n` +
+      `Our team will review your specification and feature it on @NilePixelTech.\n` +
+      `If you have questions or need support, contact @NilePixelSupportBot.\n\n` +
       `━━━━━━━━━━━━━━━━━━━━━━\n` +
-      `🚀 <b>WHILE YOU WAIT: EARN YOUR 70% REFERRAL SCORE</b>\n` +
-      `Start inviting members right now! Every friend who joins @NilePixelTech through your personal link boosts your <b>70% Referral Score</b>:`,
+      `<b>Your Channel Invite Link is Ready:</b>\n` +
+      `${linkText}\n\n` +
+      `Share this link with your network to invite friends to @NilePixelTech. Every confirmed join boosts your rank on the leaderboard.`,
     Markup.inlineKeyboard([
       [
-        Markup.button.callback('🔗 Get My Invite Link', 'cmd_mylink'),
-        Markup.button.callback('📊 My Stats & Rank', 'cmd_stats'),
+        Markup.button.callback('Get My Invite Link', 'cmd_mylink'),
+        Markup.button.callback('My Stats & Rank', 'cmd_stats'),
       ],
       [
-        Markup.button.url('📢 Official Channel (@NilePixelTech)', 'https://t.me/NilePixelTech'),
-        Markup.button.url('💬 Contact Support (@NilePixelSupportBot)', 'https://t.me/NilePixelSupportBot'),
+        Markup.button.callback('Leaderboard', 'cmd_leaderboard'),
+        Markup.button.url('Official Channel', 'https://t.me/NilePixelTech'),
       ],
       [
-        Markup.button.callback('🏆 Leaderboard', 'cmd_leaderboard'),
-        Markup.button.callback('🏠 Main Menu', 'cmd_start'),
+        Markup.button.url('Contact Support (@NilePixelSupportBot)', 'https://t.me/NilePixelSupportBot'),
       ],
     ])
   );
 }
 
 /**
- * Starts the interactive step-by-step submission questionnaire
+ * Starts the step-by-step submission questionnaire.
+ * If already submitted and not an explicit update, notifies the user and offers an update button.
  */
 export async function startSubmissionWizard(
   ctx: Context,
   participantId: number,
-  initialImageUrl?: string
+  initialImageUrl?: string,
+  isExplicitUpdate?: boolean
 ) {
   const telegramIdStr = String(ctx.from!.id);
+
+  if (!isExplicitUpdate) {
+    const existing = await getSubmissionByParticipantId(participantId);
+    if (existing) {
+      const subTitle = escapeHtml(existing.projectTitle || 'Showcase Project');
+      const subUrl = escapeHtml(existing.projectUrl);
+      const statusText = existing.status.toUpperCase();
+
+      await ctx.replyWithHTML(
+        `<b>You Have Already Submitted</b>\n\n` +
+          `You previously submitted your project specification:\n\n` +
+          `• <b>Title:</b> ${subTitle}\n` +
+          `• <b>Demo / Portfolio:</b> <code>${subUrl}</code>\n` +
+          `• <b>Status:</b> ${statusText}\n\n` +
+          `If you want to update your submission details, tap <b>Update Project Details</b> below.`,
+        Markup.inlineKeyboard([
+          [Markup.button.callback('Update Project Details', 'cmd_update_submit')],
+          [Markup.button.callback('My Stats & Rank', 'cmd_stats')],
+          [Markup.button.callback('Main Menu', 'cmd_start')],
+        ])
+      );
+      return;
+    }
+  }
 
   userSessions.set(telegramIdStr, {
     step: 'TITLE',
     imageUrl: initialImageUrl || null,
   });
 
-  const photoNotice = initialImageUrl ? `🖼️ <i>Your uploaded photo is saved and will be attached!</i>\n\n` : '';
+  const photoNotice = initialImageUrl
+    ? `<i>Your uploaded photo is saved and will be attached.</i>\n\n`
+    : '';
 
   await ctx.replyWithHTML(
-    `🚀 <b>PROJECT SPECIFICATION SUBMISSION</b>\n` +
-      `<b>Step 1 of 4: Project Title</b>\n\n` +
+    `<b>Project Submission — Step 1 of 4: Title</b>\n\n` +
       `${photoNotice}` +
-      `🏷️ <b>What is your Project Title?</b>\n` +
-      `<i>Please type and reply with the name of your project (e.g., <b>NilePay Gateway</b>):</i>`,
+      `Please reply with your project title (or your name for a developer portfolio):\n` +
+      `(e.g., <b>NilePay Gateway</b>)`,
     Markup.inlineKeyboard([
-      [Markup.button.callback('❌ Cancel Submission', 'cancel_submission')],
+      [Markup.button.callback('Cancel', 'cancel_submission')],
     ])
   );
 }
 
 export function registerSubmitCommand(bot: Telegraf) {
-  // 1. Command /submit (either quick one-liner OR launches interactive wizard)
+  // 1. /submit command
   bot.command('submit', async (ctx: Context) => {
     if (!ctx.from) return;
 
     const telegramId = BigInt(ctx.from.id);
-    const telegramIdStr = String(ctx.from.id);
 
     try {
       const participant = await getParticipantByTelegramId(telegramId);
       if (!participant || !participant.isCompetitor) {
-        await ctx.replyWithHTML(
-          '🌟 Please register for the StarLift challenge first by sending /start.'
-        );
+        await ctx.reply('Please register for the challenge first by sending /start.');
         return;
       }
 
-      const message = ctx.message;
-      let fullText = '';
-      if (message && 'text' in message) {
-        fullText = message.text.trim();
-      }
-
-      const payload = fullText.replace(/^\/submit(@\w+)?/i, '').trim();
-
-      // If user provided pipes (Quick One-Liner): Title | URL | Description | Optional Image
-      if (payload.includes('|')) {
-        const parts = payload.split('|').map((p) => p.trim());
-        const title = parts[0] || 'StarLift Showcase Project';
-        let projectUrl = parts[1] || '';
-        let description = parts[2] || 'Innovative tech showcase entry for NilePixel StarLift.';
-        let imageUrl: string | undefined = undefined;
-
-        if (parts.length >= 4 && parts[3].startsWith('http')) {
-          imageUrl = parts[3];
-        } else if (parts.length > 3) {
-          description = parts.slice(2).join(' | ');
-        }
-
-        if (!projectUrl.startsWith('http://') && !projectUrl.startsWith('https://')) {
-          if (projectUrl.includes('.')) projectUrl = `https://${projectUrl}`;
-        }
-
-        if (!projectUrl.startsWith('http')) {
-          await ctx.replyWithHTML(
-            '⚠️ <b>Invalid URL format.</b> Please ensure your URL starts with <code>https://</code> or <code>http://</code>.'
-          );
-          return;
-        }
-
-        await finalizeSubmission(ctx, participant.id, {
-          step: 'IMAGE',
-          projectTitle: title,
-          projectUrl,
-          description,
-          imageUrl: imageUrl || null,
-        });
-        return;
-      }
-
-      // No pipe payload: launch the friendly, step-by-step interactive questionnaire!
       await startSubmissionWizard(ctx, participant.id);
     } catch (err) {
       logger.error('Error in /submit command:', { err });
@@ -209,7 +223,47 @@ export function registerSubmitCommand(bot: Telegraf) {
     }
   });
 
-  // 3. Skip Image callback button in Step 4
+  // 3. Inline button cmd_update_submit (explicit re-submission)
+  bot.action('cmd_update_submit', async (ctx: Context) => {
+    if (!ctx.from) return;
+
+    try {
+      await ctx.answerCbQuery('Starting update…');
+      const telegramId = BigInt(ctx.from.id);
+      const participant = await getParticipantByTelegramId(telegramId);
+      if (!participant) return;
+
+      await startSubmissionWizard(ctx, participant.id, undefined, true);
+    } catch (err) {
+      logger.error('Error in cmd_update_submit callback:', { err });
+    }
+  });
+
+  // 4. Confirm submission button
+  bot.action('confirm_submit', async (ctx: Context) => {
+    if (!ctx.from) return;
+
+    try {
+      const telegramIdStr = String(ctx.from.id);
+      const session = userSessions.get(telegramIdStr);
+
+      if (!session || !session.projectUrl || !session.description) {
+        await ctx.answerCbQuery('Session expired. Please restart with /submit.');
+        return;
+      }
+
+      await ctx.answerCbQuery('Submitting project specification…');
+      const telegramId = BigInt(ctx.from.id);
+      const participant = await getParticipantByTelegramId(telegramId);
+      if (!participant) return;
+
+      await finalizeSubmission(ctx, participant.id, session);
+    } catch (err) {
+      logger.error('Error in confirm_submit callback:', { err });
+    }
+  });
+
+  // 5. Skip image in Step 4
   bot.action('skip_submission_image', async (ctx: Context) => {
     if (!ctx.from) return;
 
@@ -228,13 +282,13 @@ export function registerSubmitCommand(bot: Telegraf) {
       if (!participant) return;
 
       session.imageUrl = null;
-      await finalizeSubmission(ctx, participant.id, session);
+      await renderReviewAndConfirm(ctx, participant.id, session);
     } catch (err) {
       logger.error('Error in skip_submission_image callback:', { err });
     }
   });
 
-  // 4. Cancel submission callback
+  // 6. Cancel submission
   bot.action('cancel_submission', async (ctx: Context) => {
     if (!ctx.from) return;
 
@@ -242,20 +296,20 @@ export function registerSubmitCommand(bot: Telegraf) {
       await ctx.answerCbQuery('Submission cancelled.');
       const telegramIdStr = String(ctx.from.id);
       userSessions.delete(telegramIdStr);
-      await ctx.reply('❌ Project submission cancelled. You can start anytime with /submit or /start.');
+      await ctx.reply('Project submission cancelled. You can start anytime with /submit or /start.');
     } catch (err) {
       logger.error('Error in cancel_submission callback:', { err });
     }
   });
 
-  // 5. Intercept interactive text replies during steps 1, 2, 3, 4
+  // 7. Text input listener for wizard steps
   bot.on('text', async (ctx: Context, next: () => Promise<void>) => {
     if (!ctx.from || !ctx.message || !('text' in ctx.message)) return next();
 
     const telegramIdStr = String(ctx.from.id);
     const text = ctx.message.text.trim();
 
-    // If it's a command like /start, /help, /stats, /mylink, cancel wizard and proceed
+    // If text is another command, clear wizard session and let other handlers run
     if (text.startsWith('/') && !text.startsWith('/submit')) {
       if (userSessions.has(telegramIdStr)) {
         userSessions.delete(telegramIdStr);
@@ -273,7 +327,7 @@ export function registerSubmitCommand(bot: Telegraf) {
     // STEP 1: Project Title
     if (session.step === 'TITLE') {
       if (text.length < 2) {
-        await ctx.reply('⚠️ Please provide a valid project title:');
+        await ctx.reply('Please provide a valid project title:');
         return;
       }
 
@@ -281,19 +335,18 @@ export function registerSubmitCommand(bot: Telegraf) {
       session.step = 'URL';
 
       await ctx.replyWithHTML(
-        `✅ <b>Project Title:</b> <b>${escapeHtml(session.projectTitle)}</b>\n\n` +
-          `━━━━━━━━━━━━━━━━━━━━━━\n` +
-          `🔗 <b>Step 2 of 4: Project Demo or Repository URL</b>\n` +
-          `<i>Please send your live website link, web app URL, or GitHub repository:</i>\n` +
+        `<b>Project Title Saved:</b> <b>${escapeHtml(session.projectTitle)}</b>\n\n` +
+          `<b>Step 2 of 4: Demo / Portfolio Link</b>\n` +
+          `Please send your live website link, GitHub repository, or portfolio URL:\n` +
           `(e.g., <code>https://nilepay.et</code> or <code>https://github.com/...</code>)`,
         Markup.inlineKeyboard([
-          [Markup.button.callback('❌ Cancel', 'cancel_submission')],
+          [Markup.button.callback('Cancel', 'cancel_submission')],
         ])
       );
       return;
     }
 
-    // STEP 2: Project URL
+    // STEP 2: Demo / Portfolio URL
     if (session.step === 'URL') {
       let url = text;
       if (!url.startsWith('http://') && !url.startsWith('https://')) {
@@ -302,7 +355,7 @@ export function registerSubmitCommand(bot: Telegraf) {
 
       if (!url.startsWith('http')) {
         await ctx.replyWithHTML(
-          '⚠️ <b>Invalid URL format.</b> Please send a valid link starting with <code>https://</code> or <code>http://</code> (e.g. <code>https://yourdemo.com</code>):'
+          'Please send a valid link starting with <code>https://</code> or <code>http://</code> (e.g. <code>https://yourdemo.com</code>):'
         );
         return;
       }
@@ -311,45 +364,40 @@ export function registerSubmitCommand(bot: Telegraf) {
       session.step = 'DESCRIPTION';
 
       await ctx.replyWithHTML(
-        `✅ <b>Project Demo:</b> <code>${escapeHtml(session.projectUrl)}</code>\n\n` +
-          `━━━━━━━━━━━━━━━━━━━━━━\n` +
-          `💡 <b>Step 3 of 4: Short Pitch / Description</b>\n` +
-          `<i>Please write a brief summary (1–3 sentences) explaining what your project does, what problem it solves, and why people should vote for it:</i>`,
+        `<b>Demo URL Saved:</b> <code>${escapeHtml(session.projectUrl)}</code>\n\n` +
+          `<b>Step 3 of 4: Short Pitch / Description</b>\n` +
+          `Please write a short description (1–3 sentences) explaining what your project does:`,
         Markup.inlineKeyboard([
-          [Markup.button.callback('❌ Cancel', 'cancel_submission')],
+          [Markup.button.callback('Cancel', 'cancel_submission')],
         ])
       );
       return;
     }
 
-    // STEP 3: Description / Pitch -> IMMEDIATELY ASK FOR THE IMAGE!
+    // STEP 3: Description / Pitch
     if (session.step === 'DESCRIPTION') {
       if (text.length < 5) {
-        await ctx.reply('⚠️ Please provide a short description of at least a few words:');
+        await ctx.reply('Please provide a short description of at least a few words:');
         return;
       }
 
       session.description = text;
 
-      // If user had already uploaded a photo when starting wizard:
       if (session.imageUrl) {
-        await finalizeSubmission(ctx, participant.id, session);
+        await renderReviewAndConfirm(ctx, participant.id, session);
         return;
       }
 
       session.step = 'IMAGE';
 
       await ctx.replyWithHTML(
-        `✅ <b>Pitch Description Saved!</b>\n\n` +
-          `━━━━━━━━━━━━━━━━━━━━━━\n` +
-          `📸 <b>Step 4 of 4: Project Banner / Screenshot Image</b>\n` +
-          `<b>(STRONGLY RECOMMENDED)</b>\n\n` +
-          `Showcase posts with a visual banner receive <b>up to 5x more votes and community reactions</b> on @NilePixelTech (which make up <b>30% of your total competition score</b>)!\n\n` +
-          `👉 <b>Please send a screenshot or banner photo of your project now</b> (or paste an image link).\n\n` +
-          `<i>If you don't have an image right now, tap "Skip Image" below and add one later:</i>`,
+        `<b>Description Saved.</b>\n\n` +
+          `<b>Step 4 of 4: Project Screenshot or Banner</b>\n` +
+          `<i>(Strongly recommended — projects with an image receive significantly higher community votes)</i>\n\n` +
+          `Please send a screenshot or banner photo of your project now, or tap <b>Skip Image</b> to proceed without one:`,
         Markup.inlineKeyboard([
-          [Markup.button.callback('⏭️ Skip Image (Text Only)', 'skip_submission_image')],
-          [Markup.button.callback('❌ Cancel', 'cancel_submission')],
+          [Markup.button.callback('Skip Image', 'skip_submission_image')],
+          [Markup.button.callback('Cancel', 'cancel_submission')],
         ])
       );
       return;
@@ -359,15 +407,15 @@ export function registerSubmitCommand(bot: Telegraf) {
     if (session.step === 'IMAGE') {
       if (text.startsWith('http://') || text.startsWith('https://')) {
         session.imageUrl = text;
-        await finalizeSubmission(ctx, participant.id, session);
+        await renderReviewAndConfirm(ctx, participant.id, session);
         return;
       }
 
       await ctx.replyWithHTML(
-        `⚠️ Please send an image photo or link starting with <code>https://</code>, or tap <b>Skip Image</b>:`,
+        `Please send an image photo or link starting with <code>https://</code>, or tap <b>Skip Image</b>:`,
         Markup.inlineKeyboard([
-          [Markup.button.callback('⏭️ Skip Image (Text Only)', 'skip_submission_image')],
-          [Markup.button.callback('❌ Cancel', 'cancel_submission')],
+          [Markup.button.callback('Skip Image', 'skip_submission_image')],
+          [Markup.button.callback('Cancel', 'cancel_submission')],
         ])
       );
       return;
@@ -376,7 +424,7 @@ export function registerSubmitCommand(bot: Telegraf) {
     return next();
   });
 
-  // 6. Handle Photos uploaded by contestants
+  // 8. Photo listener
   bot.on('photo', async (ctx: Context) => {
     if (!ctx.from || !ctx.message || !('photo' in ctx.message)) return;
 
@@ -386,9 +434,7 @@ export function registerSubmitCommand(bot: Telegraf) {
     try {
       const participant = await getParticipantByTelegramId(telegramId);
       if (!participant || !participant.isCompetitor) {
-        await ctx.replyWithHTML(
-          '🌟 Please register for the StarLift challenge first by sending /start.'
-        );
+        await ctx.reply('Please register for the challenge first by sending /start.');
         return;
       }
 
@@ -396,26 +442,22 @@ export function registerSubmitCommand(bot: Telegraf) {
       const bestPhoto = photos[photos.length - 1];
       const fileId = bestPhoto.file_id;
 
-      // Case A: User is in the middle of the submission wizard
       const session = userSessions.get(telegramIdStr);
       if (session) {
         session.imageUrl = fileId;
 
-        // If they were at Step 4 (asking for image): finalize immediately!
         if (session.step === 'IMAGE' && session.projectUrl && session.description) {
-          await finalizeSubmission(ctx, participant.id, session);
+          await renderReviewAndConfirm(ctx, participant.id, session);
           return;
         }
 
-        // Otherwise save photo and continue with whatever step they are at
         await ctx.replyWithHTML(
-          `🖼️ <b>Screenshot/Banner Photo Attached!</b>\n` +
-            `Now, please continue with the current step above.`
+          `<b>Banner Photo Attached.</b>\nPlease continue with the current step above.`
         );
         return;
       }
 
-      // Case B: User already has an existing submission -> Update their banner photo!
+      // If user already has an existing submission and uploads a photo:
       const existing = await getSubmissionByParticipantId(participant.id);
       if (existing) {
         const updated = await createOrUpdateSubmission({
@@ -432,14 +474,13 @@ export function registerSubmitCommand(bot: Telegraf) {
         }
 
         await ctx.replyWithHTML(
-          `🖼️ <b>Showcase Banner Photo Updated!</b>\n\n` +
+          `<b>Banner Photo Updated</b>\n\n` +
             `Your photo has been attached to your project <b>${escapeHtml(existing.projectTitle || 'Showcase Project')}</b>.\n\n` +
-            `Our team in the Administrator Group will use this image when featuring your project on @NilePixelTech!`
+            `Our team in the Administrator Group will use this image when featuring your project on @NilePixelTech.`
         );
         return;
       }
 
-      // Case C: User has no submission yet -> Start wizard with this photo attached!
       await startSubmissionWizard(ctx, participant.id, fileId);
     } catch (err) {
       logger.error('Error handling photo message:', { err });

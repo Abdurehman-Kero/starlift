@@ -213,15 +213,15 @@ export function registerAdminCommand(bot: Telegraf) {
       const postUrl = published.channelPostUrl || 'https://t.me/NilePixelTech';
 
       const updatedText =
-        `✅ <b>PUBLISHED TO @NilePixelTech</b>\n\n` +
-        `🏷️ <b>Title:</b> ${title}\n` +
-        `👨‍💻 <b>Contestant:</b> ${author}\n` +
-        `📢 <b>Channel Post:</b> <a href="${postUrl}">${postUrl}</a>\n\n` +
-        `<i>Published directly from Telegram by ${adminName} at ${new Date().toLocaleTimeString()}</i>`;
+        `<b>PUBLISHED TO @NilePixelTech</b>\n\n` +
+        `• <b>Title:</b> ${title}\n` +
+        `• <b>Contestant:</b> ${author}\n` +
+        `• <b>Channel Post:</b> <a href="${postUrl}">${postUrl}</a>\n\n` +
+        `<i>Published directly by ${adminName} at ${new Date().toLocaleTimeString()}</i>`;
 
       const keyboard = Markup.inlineKeyboard([
-        [Markup.button.url('🚀 View Channel Post', postUrl)],
-        [Markup.button.callback('🗑️ Remove from Channel', `sub_unpub:${submissionId}`)],
+        [Markup.button.url('View Channel Post', postUrl)],
+        [Markup.button.callback('Remove from Channel', `sub_unpub:${submissionId}`)],
       ]);
 
       // If original message had photo, edit caption, otherwise edit text
@@ -280,14 +280,14 @@ export function registerAdminCommand(bot: Telegraf) {
       const author = escapeHtml(submission.participant.firstName);
 
       const updatedText =
-        `❌ <b>SUBMISSION REJECTED / IGNORED</b>\n\n` +
-        `🏷️ <b>Title:</b> ${title}\n` +
-        `👨‍💻 <b>Contestant:</b> ${author}\n\n` +
+        `<b>SUBMISSION REJECTED / IGNORED</b>\n\n` +
+        `• <b>Title:</b> ${title}\n` +
+        `• <b>Contestant:</b> ${author}\n\n` +
         `<i>Action taken by ${adminName} at ${new Date().toLocaleTimeString()}</i>\n` +
-        `<i>📩 A direct message was sent to ${author} requesting adjustments and resubmission.</i>`;
+        `<i>A direct message was sent to ${author} requesting adjustments and resubmission.</i>`;
 
       const keyboard = Markup.inlineKeyboard([
-        [Markup.button.callback('🔄 Reconsider & Publish to Channel', `sub_pub:${submissionId}`)],
+        [Markup.button.callback('Reconsider & Publish to Channel', `sub_pub:${submissionId}`)],
       ]);
 
       try {

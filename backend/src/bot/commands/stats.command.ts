@@ -20,7 +20,7 @@ async function handleStats(ctx: Context) {
   try {
     const participant = await getParticipantByTelegramId(telegramId);
     if (!participant || !participant.isCompetitor) {
-      await ctx.reply('🌟 Please register as a contestant first by sending /start');
+      await ctx.reply('Please register as a contestant first by sending /start.');
       return;
     }
 
@@ -42,55 +42,43 @@ async function handleStats(ctx: Context) {
 
     const linkText = activeLink
       ? `<code>${escapeHtml(activeLink.inviteLink)}</code>`
-      : '<i>Use /mylink or tap button below to generate one</i>';
+      : '<i>Tap "Get Invite Link" below to generate your link</i>';
 
     const showcaseLine =
       submission?.status === 'published' && submission.channelPostUrl
-        ? `📢 <b>Showcase Post:</b> <a href="${submission.channelPostUrl}">View on @NilePixelTech</a>\n`
+        ? `• <b>Showcase Post:</b> <a href="${submission.channelPostUrl}">View on @NilePixelTech</a>\n`
         : submission
-        ? `⏳ <b>Showcase Submission:</b> <b>${submission.status.toUpperCase()}</b> (Under Review)\n`
-        : `💡 <b>Project Showcase:</b> Send /submit to feature your project on channel\n`;
-
-    const milestoneMsg =
-      referralCount === 0
-        ? '🎯 <b>Next Goal:</b> Get your first invite to appear on the leaderboard!'
-        : referralCount < 5
-        ? '📈 <b>Great start!</b> Keep inviting developers to climb higher!'
-        : referralCount < 15
-        ? "🔥 <b>You're on fire!</b> Top prize positions are within reach!"
-        : '🏆 <b>Outstanding performance!</b> A true StarLift showcase champion!';
+        ? `• <b>Showcase Submission:</b> ${submission.status.toUpperCase()} (Under Review)\n`
+        : `• <b>Showcase Submission:</b> Not submitted yet (send /submit)\n`;
 
     const name = escapeHtml(participant.firstName);
     const code = escapeHtml(participant.referralCode);
 
     const text =
-      `📊 <b>StarLift Contestant Statistics</b>\n\n` +
-      `👤 <b>Contestant:</b> ${name}\n` +
-      `🔑 <b>Referral Code:</b> <code>${code}</code>\n\n` +
-      `👥 <b>Confirmed Referrals:</b> <b>${referralCount}</b> joins\n` +
-      `❤️ <b>Project Reactions:</b> <b>${reactionCount}</b> reactions (live sync)\n` +
-      `${showcaseLine}` +
-      `🏅 <b>Current Standing:</b> <b>Rank #${rank}</b> of ${totalParticipants} contestants\n\n` +
-      `📈 <b>Composite Score Breakdown:</b>\n` +
-      `• 🤝 <b>Referral Score (70%):</b> <code>${referralScore} / 70.0 pts</code>\n` +
-      `• ❤️ <b>Reaction Score (30%):</b> <code>${reactionScore} / 30.0 pts</code>\n` +
-      `• 🎯 <b>Total Score:</b> <b>${finalScore} pts</b>\n\n` +
-      `${milestoneMsg}\n\n` +
-      `🔗 <b>Your Personal Link:</b>\n${linkText}`;
+      `<b>Competition Statistics</b>\n\n` +
+      `• <b>Contestant:</b> ${name}\n` +
+      `• <b>Referral Code:</b> <code>${code}</code>\n` +
+      `• <b>Current Standing:</b> Rank #${rank} of ${totalParticipants} contestants\n\n` +
+      `<b>Your Exact Performance Numbers:</b>\n` +
+      `• <b>Confirmed Referrals:</b> ${referralCount} members\n` +
+      `• <b>Project Reactions:</b> ${reactionCount} reactions\n` +
+      `• <b>Total Score:</b> ${finalScore} pts (70% referrals: ${referralScore} + 30% reactions: ${reactionScore})\n\n` +
+      `${showcaseLine}\n` +
+      `<b>Your Personal Invite Link:</b>\n${linkText}`;
 
     const buttons = [
       [
-        Markup.button.callback('🔗 My Invite Link', 'cmd_mylink'),
-        Markup.button.callback('🏆 Leaderboard', 'cmd_leaderboard'),
+        Markup.button.callback('Get Invite Link', 'cmd_mylink'),
+        Markup.button.callback('Leaderboard', 'cmd_leaderboard'),
       ],
       [
         submission?.status === 'published' && submission.channelPostUrl
-          ? Markup.button.url('📢 View Showcase Post', submission.channelPostUrl)
-          : Markup.button.callback('🚀 Submit Project', 'cmd_submit'),
-        Markup.button.callback('🔄 Refresh Stats', 'cmd_stats'),
+          ? Markup.button.url('View Showcase Post', submission.channelPostUrl)
+          : Markup.button.callback('Update Project', 'cmd_update_submit'),
+        Markup.button.callback('Refresh Stats', 'cmd_stats'),
       ],
       [
-        Markup.button.callback('ℹ️ Guide & Rules', 'cmd_help'),
+        Markup.button.callback('Main Menu', 'cmd_start'),
       ],
     ];
 
@@ -108,7 +96,7 @@ export function registerStatsCommand(bot: Telegraf) {
 
   bot.action('cmd_stats', async (ctx: Context) => {
     try {
-      await ctx.answerCbQuery('Refreshing your stats…');
+      await ctx.answerCbQuery('Refreshing statistics…');
       await handleStats(ctx);
     } catch (err) {
       logger.error('Error in cmd_stats callback', { err });

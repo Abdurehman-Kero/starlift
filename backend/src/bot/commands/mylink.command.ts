@@ -20,7 +20,7 @@ async function handleMyLink(ctx: Context) {
   try {
     const participant = await getParticipantByTelegramId(telegramId);
     if (!participant || !participant.isCompetitor) {
-      await ctx.reply('🌟 Please register as a contestant first by sending /start');
+      await ctx.reply('Please register as a contestant first by sending /start.');
       return;
     }
 
@@ -29,24 +29,23 @@ async function handleMyLink(ctx: Context) {
     if (existing) {
       const link = escapeHtml(existing.inviteLink);
       const shareText = encodeURIComponent(
-        '🌟 Join me on the NilePixel StarLift Project Showcase Challenge!\nJoin the channel here:'
+        'Join the NilePixel StarLift Challenge channel here:'
       );
       const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(existing.inviteLink)}&text=${shareText}`;
 
       await ctx.replyWithHTML(
-        `🔗 <b>Your Personal Invitation Link:</b>\n\n` +
+        `<b>Your Personal Invitation Link</b>\n\n` +
           `<code>${link}</code>\n\n` +
-          `📢 <b>How to Use:</b>\n` +
-          `• Share this link with your friends, colleagues, and developer groups.\n` +
-          `• When someone joins @NilePixelTech using this link, our system counts them as your verified referral instantly!\n` +
-          `• Every referral contributes <b>70%</b> toward your final StarLift composite score.\n\n` +
-          `📊 Track your rank anytime with /stats.`,
+          `<b>How It Works:</b>\n` +
+          `• Share this link with friends, colleagues, and developer groups.\n` +
+          `• When someone joins @NilePixelTech through this link, they are credited as your referral.\n` +
+          `• Track your referrals and rank anytime with /stats.`,
         Markup.inlineKeyboard([
-          [Markup.button.url('🚀 Open Channel Invite', existing.inviteLink)],
-          [Markup.button.url('📢 Share with Friends', shareUrl)],
+          [Markup.button.url('Open Channel Invite', existing.inviteLink)],
+          [Markup.button.url('Share with Friends', shareUrl)],
           [
-            Markup.button.callback('📊 View My Stats', 'cmd_stats'),
-            Markup.button.callback('🏆 Leaderboard', 'cmd_leaderboard'),
+            Markup.button.callback('View My Stats', 'cmd_stats'),
+            Markup.button.callback('Leaderboard', 'cmd_leaderboard'),
           ],
         ])
       );
@@ -59,8 +58,8 @@ async function handleMyLink(ctx: Context) {
 
     if (!rawChannelId || rawChannelId === '-1001234567890') {
       await ctx.reply(
-        '⚠️ The Telegram showcase channel has not been configured yet.\n\n' +
-          'Please configure TELEGRAM_CHANNEL_ID in .env or via the Admin Dashboard Settings.'
+        'The Telegram showcase channel has not been configured yet.\n\n' +
+          'Please configure TELEGRAM_CHANNEL_ID in settings.'
       );
       return;
     }
@@ -92,24 +91,23 @@ async function handleMyLink(ctx: Context) {
 
       const link = escapeHtml(created.invite_link);
       const shareText = encodeURIComponent(
-        '🌟 Join me on the NilePixel StarLift Project Showcase Challenge!\nJoin the channel here:'
+        'Join the NilePixel StarLift Challenge channel here:'
       );
       const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(created.invite_link)}&text=${shareText}`;
 
       await ctx.replyWithHTML(
-        `🔗 <b>Your Personal Invitation Link:</b>\n\n` +
+        `<b>Your Personal Invitation Link</b>\n\n` +
           `<code>${link}</code>\n\n` +
-          `📢 <b>How to Use:</b>\n` +
-          `• Share this link with your friends, colleagues, and developer groups.\n` +
-          `• When someone joins @NilePixelTech using this link, our system counts them as your verified referral instantly!\n` +
-          `• Every referral contributes <b>70%</b> toward your final StarLift composite score.\n\n` +
-          `📊 Track your rank anytime with /stats.`,
+          `<b>How It Works:</b>\n` +
+          `• Share this link with friends, colleagues, and developer groups.\n` +
+          `• When someone joins @NilePixelTech through this link, they are credited as your referral.\n` +
+          `• Track your referrals and rank anytime with /stats.`,
         Markup.inlineKeyboard([
-          [Markup.button.url('🚀 Open Channel Invite', created.invite_link)],
-          [Markup.button.url('📢 Share with Friends', shareUrl)],
+          [Markup.button.url('Open Channel Invite', created.invite_link)],
+          [Markup.button.url('Share with Friends', shareUrl)],
           [
-            Markup.button.callback('📊 View My Stats', 'cmd_stats'),
-            Markup.button.callback('🏆 Leaderboard', 'cmd_leaderboard'),
+            Markup.button.callback('View My Stats', 'cmd_stats'),
+            Markup.button.callback('Leaderboard', 'cmd_leaderboard'),
           ],
         ])
       );
@@ -119,7 +117,7 @@ async function handleMyLink(ctx: Context) {
       logger.error('Failed to create Telegram invite link', { tgError });
 
       await ctx.reply(
-        `⚠️ Could not create your invite link.\n\n` +
+        `Could not create your invite link.\n\n` +
           `Reason: ${errorMsg}\n\n` +
           `Make sure the bot is an admin of the channel (@NilePixelTech) with "Add Members / Invite Users via Link" rights, then try again.`
       );
