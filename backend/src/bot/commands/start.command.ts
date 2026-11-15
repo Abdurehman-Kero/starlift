@@ -72,32 +72,34 @@ export function registerStartCommand(bot: Telegraf) {
 
       const welcomeText =
         `${greeting}\n\n` +
-        `You are registered for the <b>StarLift Project Showcase Challenge</b> (Nov 15 – Nov 30, 2026)!\n\n` +
-        `🔑 <b>Your Referral Code:</b> <code>${code}</code>\n\n` +
-        `📊 <b>How the 70/30 Scoring Works:</b>\n` +
-        `• 🤝 <b>Referrals (70%):</b> Earn points for every member who joins @NilePixelTech using your personal link.\n` +
-        `• ❤️ <b>Reactions (30%):</b> Earn points from channel reactions on your showcased project post.\n\n` +
-        `🚀 <b>Get Started:</b>\n` +
-        `1. Tap <b>Get Invite Link</b> below to get your channel invitation link.\n` +
-        `2. Share with friends and developer groups.\n` +
-        `3. Monitor your rank in real-time with <b>My Stats</b>!`;
+        `🚀 You are officially registered as a contestant in the <b>StarLift Project Showcase Challenge</b>!\n\n` +
+        `🔑 <b>Your Referral Code:</b> <code>${code}</code>\n` +
+        `⏳ <b>Challenge Period:</b> November 15 – November 30, 2026\n` +
+        `📢 <b>Official Channel:</b> @NilePixelTech\n\n` +
+        `⚖️ <b>70/30 Scoring Formula:</b>\n` +
+        `• 🤝 <b>Referrals (70%):</b> Earn points whenever new members join @NilePixelTech using your personal invite link.\n` +
+        `• ❤️ <b>Reactions (30%):</b> Earn points from community reactions on your project showcase post in the channel.\n\n` +
+        `🎯 <b>How to Compete:</b>\n` +
+        `1. Tap <b>🔗 Get Invite Link</b> below to get your personal channel invite link.\n` +
+        `2. Share it with friends, developers, and tech groups.\n` +
+        `3. Tap <b>📊 My Stats & Rank</b> anytime to track your live position on the leaderboard!`;
 
       await ctx.replyWithHTML(
         welcomeText,
         Markup.inlineKeyboard([
           [
             Markup.button.callback('🔗 Get Invite Link', 'cmd_mylink'),
-            Markup.button.callback('📊 My Stats', 'cmd_stats'),
+            Markup.button.callback('📊 My Stats & Rank', 'cmd_stats'),
           ],
           [
             Markup.button.callback('🏆 Leaderboard', 'cmd_leaderboard'),
             Markup.button.callback('ℹ️ Guide & Rules', 'cmd_help'),
           ],
           [
-            Markup.button.url('🚀 Open Channel (@NilePixelTech)', 'https://t.me/NilePixelTech'),
+            Markup.button.url('📢 Open Channel (@NilePixelTech)', 'https://t.me/NilePixelTech'),
           ],
           [
-            Markup.button.url('💬 Project Support (@NilePixelSupportBot)', 'https://t.me/NilePixelSupportBot'),
+            Markup.button.url('💬 Technical Support (@NilePixelSupportBot)', 'https://t.me/NilePixelSupportBot'),
           ],
         ])
       );
@@ -115,18 +117,21 @@ export function registerStartCommand(bot: Telegraf) {
       const name = escapeHtml(ctx.from.first_name ?? 'Contestant');
       await ctx.replyWithHTML(
         `🌟 <b>NilePixel StarLift — Main Menu</b>\n\n` +
-          `Hello ${name}! Select an option below to manage your StarLift challenge entry:`,
+          `Hello ${name}! Manage your StarLift challenge entry, track your rank, and invite members to climb the leaderboard:`,
         Markup.inlineKeyboard([
           [
             Markup.button.callback('🔗 Get Invite Link', 'cmd_mylink'),
-            Markup.button.callback('📊 My Stats', 'cmd_stats'),
+            Markup.button.callback('📊 My Stats & Rank', 'cmd_stats'),
           ],
           [
             Markup.button.callback('🏆 Leaderboard', 'cmd_leaderboard'),
             Markup.button.callback('ℹ️ Guide & Rules', 'cmd_help'),
           ],
           [
-            Markup.button.url('🚀 Open Channel (@NilePixelTech)', 'https://t.me/NilePixelTech'),
+            Markup.button.url('📢 Open Channel (@NilePixelTech)', 'https://t.me/NilePixelTech'),
+          ],
+          [
+            Markup.button.url('💬 Technical Support (@NilePixelSupportBot)', 'https://t.me/NilePixelSupportBot'),
           ],
         ])
       );

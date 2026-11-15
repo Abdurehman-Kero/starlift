@@ -3,23 +3,23 @@ import logger from '../config/logger';
 import { getSetting } from './settings.service';
 
 export const DEFAULT_BOT_DESCRIPTION =
-  '🌟 Welcome to NilePixel StarLift!\n\n' +
-  'Join the official StarLift Project Showcase Challenge (Nov 15 – Nov 30, 2026) by NilePixel Technologies.\n\n' +
-  '🚀 What this bot does:\n' +
-  '• Generate your unique channel invitation link\n' +
-  '• Automatically tracks friends who join @NilePixelTech\n' +
-  '• Dynamic 70/30 scoring (70% referrals + 30% project reactions)\n' +
-  '• Live competition leaderboard & statistics\n\n' +
-  'Tap "Start" below to get your personal referral code and invite link!';
+  '🌟 NilePixel StarLift Project Showcase\n\n' +
+  'Official tracking bot for the StarLift Challenge (Nov 15 – 30, 2026) by NilePixel Technologies.\n\n' +
+  '🚀 Key Capabilities:\n' +
+  '• 🔗 Generate your personal channel invite link\n' +
+  '• 👥 Track friends joining @NilePixelTech automatically\n' +
+  '• ⚖️ 70/30 Scoring: 70% referrals + 30% project reactions\n' +
+  '• 🏆 Live competition rankings & score breakdown\n\n' +
+  'Tap "Start" below to register and get your invite link!';
 
 export const DEFAULT_BOT_SHORT_DESCRIPTION =
-  'Official referral & leaderboard bot for the NilePixel StarLift Project Showcase Challenge (Nov 15–30, 2026).';
+  'Official referral & leaderboard bot for NilePixel StarLift Project Showcase Challenge (Nov 15–30, 2026).';
 
 export const BOT_COMMANDS = [
-  { command: 'start', description: '🚀 Register & view challenge status' },
+  { command: 'start', description: '🚀 Register & open main menu' },
   { command: 'mylink', description: '🔗 Get your personal channel invite link' },
   { command: 'stats', description: '📊 Check your referrals, points & rank' },
-  { command: 'leaderboard', description: '🏆 Top 10 competition standings' },
+  { command: 'leaderboard', description: '🏆 View top 10 competition standings' },
   { command: 'help', description: 'ℹ️ Scoring guide, rules & support' },
 ];
 
@@ -50,7 +50,12 @@ export async function syncBotProfileToTelegram(bot: Telegraf): Promise<{
 
   try {
     // 2. Fetch custom description from DB or fallback
-    const customDesc = await getSetting('BOT_DESCRIPTION');
+    let customDesc: string | null = null;
+    try {
+      customDesc = await getSetting('BOT_DESCRIPTION');
+    } catch {
+      // fallback if DB not yet loaded
+    }
     const descText = (customDesc || DEFAULT_BOT_DESCRIPTION).trim();
 
     await bot.telegram.setMyDescription(descText);
@@ -62,7 +67,12 @@ export async function syncBotProfileToTelegram(bot: Telegraf): Promise<{
 
   try {
     // 3. Fetch custom short description from DB or fallback
-    const customShort = await getSetting('BOT_SHORT_DESCRIPTION');
+    let customShort: string | null = null;
+    try {
+      customShort = await getSetting('BOT_SHORT_DESCRIPTION');
+    } catch {
+      // fallback if DB not yet loaded
+    }
     const shortText = (customShort || DEFAULT_BOT_SHORT_DESCRIPTION).trim();
 
     await bot.telegram.setMyShortDescription(shortText);
@@ -85,4 +95,3 @@ export async function syncBotProfileToTelegram(bot: Telegraf): Promise<{
 
   return result;
 }
-
