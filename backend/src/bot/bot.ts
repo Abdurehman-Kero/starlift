@@ -62,18 +62,35 @@ export async function launchBotOnce(): Promise<boolean> {
       // non-fatal stop
     }
 
+    // Verify token and connectivity first
+    const me = await bot.telegram.getMe();
+    logger.info(`✅ Connected to Telegram as @${me.username} (${me.id})`);
+
     try {
       await bot.telegram.deleteWebhook({ drop_pending_updates: false });
     } catch (webhookErr) {
       logger.debug('deleteWebhook notice (non-fatal):', { webhookErr });
     }
 
-    await bot.launch({
-      allowedUpdates: ['message', 'chat_member', 'callback_query'],
-    });
-
     isBotRunning = true;
     lastBotError = null;
+    isAttemptingLaunch = false;
+
+    // Launch polling in background (bot.launch() returns a promise that resolves only when polling terminates)
+    bot
+      .launch({
+        allowedUpdates: ['message', 'chat_member', 'callback_query'],
+      })
+      .then(() => {
+        isBotRunning = false;
+        logger.info('Bot polling stopped.');
+      })
+      .catch((err: unknown) => {
+        isBotRunning = false;
+        lastBotError = err instanceof Error ? err.message : String(err);
+        logger.warn(`⚠️ [BOT] Telegram polling loop error: ${lastBotError}`);
+      });
+
     logger.info('✅ Telegram bot successfully running in polling mode');
 
     // Automatically sync bot profile, description, and commands to Telegram API
@@ -84,12 +101,11 @@ export async function launchBotOnce(): Promise<boolean> {
     return true;
   } catch (err: unknown) {
     isBotRunning = false;
+    isAttemptingLaunch = false;
     lastBotError =
       err instanceof Error ? err.message : 'Failed to connect to Telegram API';
     logger.warn(`⚠️ [BOT] Telegram polling launch attempt failed: ${lastBotError}`);
     return false;
-  } finally {
-    isAttemptingLaunch = false;
   }
 }
 
