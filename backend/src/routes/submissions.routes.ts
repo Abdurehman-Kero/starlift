@@ -1,4 +1,4 @@
-import { Router, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import { authMiddleware, AuthRequest } from '../middleware/auth.middleware';
 import {
   createOrUpdateSubmission,
@@ -6,10 +6,32 @@ import {
   unpublishShowcaseFromChannel,
   getSubmissionByParticipantId,
 } from '../services/showcase.service';
+import { bot } from '../bot/bot';
 import { prisma } from '../database/client';
 import logger from '../config/logger';
 
 const router = Router();
+
+// GET /api/submissions/image/:fileId - Public image proxy for Telegram photos without exposing bot token
+router.get('/image/:fileId', async (req: Request, res: Response): Promise<void> => {
+  const { fileId } = req.params;
+  try {
+    const fileLink = await bot.telegram.getFileLink(fileId);
+    const tgRes = await fetch(fileLink.href);
+    if (!tgRes.ok) {
+      res.status(404).json({ success: false, message: 'Image not found on Telegram' });
+      return;
+    }
+    const contentType = tgRes.headers.get('content-type') || 'image/jpeg';
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    const arrayBuffer = await tgRes.arrayBuffer();
+    res.send(Buffer.from(arrayBuffer));
+  } catch (err) {
+    logger.error('Failed to proxy Telegram photo:', { fileId, err });
+    res.status(500).json({ success: false, message: 'Failed to retrieve image' });
+  }
+});
 
 router.use(authMiddleware);
 

@@ -76,6 +76,7 @@ const envSchema = z.object({
     .transform((v) => parseInt(v, 10)),
   ADMIN_EMAIL: z.string().optional().default('contact@nilexpixel.et'),
   ADMIN_PASSWORD: z.string().optional().default('nexus@0974'),
+  ADMIN_CHAT_ID: z.string().optional().default(''),
 });
 
 const parsed = envSchema.safeParse(process.env);

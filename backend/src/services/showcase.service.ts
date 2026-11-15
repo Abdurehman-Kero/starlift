@@ -1,5 +1,6 @@
 import { prisma } from '../database/client';
 import { bot } from '../bot/bot';
+import { Markup } from 'telegraf';
 import { getSetting } from './settings.service';
 import { env } from '../config/env';
 import logger from '../config/logger';
@@ -120,8 +121,8 @@ export async function publishShowcaseToChannel(submissionId: number, adminEmail?
 
   let sentMessage: { message_id: number };
 
-  // If image URL is provided, send as photo with caption; fallback to message if photo fails
-  if (submission.imageUrl && submission.imageUrl.trim().startsWith('http')) {
+  // If image URL or Telegram file_id is provided, send as photo with caption; fallback to message if photo fails
+  if (submission.imageUrl && submission.imageUrl.trim().length > 0) {
     try {
       sentMessage = await bot.telegram.sendPhoto(targetChannel, submission.imageUrl.trim(), {
         caption: postCard,
@@ -311,3 +312,106 @@ export async function syncReactionCountForMessage(channelMessageId: number, tota
 
   return reaction;
 }
+
+/**
+ * Resolves list of Telegram chat IDs configured to receive admin review alerts.
+ */
+export async function getAdminTelegramChatIds(): Promise<string[]> {
+  const ids: string[] = [];
+
+  try {
+    const dbSetting = await getSetting('ADMIN_CHAT_ID');
+    if (dbSetting) {
+      const split = dbSetting
+        .split(/[,;\s]+/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+      ids.push(...split);
+    }
+  } catch (err) {
+    logger.warn('Error reading ADMIN_CHAT_ID setting:', { err });
+  }
+
+  if (env.ADMIN_CHAT_ID) {
+    const split = env.ADMIN_CHAT_ID
+      .split(/[,;\s]+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    ids.push(...split);
+  }
+
+  return Array.from(new Set(ids));
+}
+
+/**
+ * Notifies all configured admins on Telegram when a new project is submitted.
+ * Admins can 1-click [Directly Publish to Channel] or [Ignore / Reject] directly from Telegram!
+ */
+export async function notifyAdminsOfNewSubmission(submissionId: number): Promise<void> {
+  const adminChatIds = await getAdminTelegramChatIds();
+  if (adminChatIds.length === 0) {
+    logger.info('No admin chat IDs configured for showcase notifications.');
+    return;
+  }
+
+  const submission = await prisma.projectSubmission.findUnique({
+    where: { id: submissionId },
+    include: { participant: true },
+  });
+
+  if (!submission) return;
+
+  const contestantName = escapeHtml(submission.participant.firstName);
+  const contestantHandle = submission.participant.username
+    ? `@${escapeHtml(submission.participant.username)}`
+    : 'None';
+  const title = escapeHtml(submission.projectTitle || 'StarLift Showcase Project');
+  const projectUrl = escapeHtml(submission.projectUrl);
+  const description = escapeHtml(submission.description);
+  const code = escapeHtml(submission.participant.referralCode);
+
+  const adminCard =
+    `📥 <b>NEW SHOWCASE SUBMISSION FOR REVIEW</b>\n\n` +
+    `👨‍💻 <b>Contestant:</b> ${contestantName} (${contestantHandle})\n` +
+    `🆔 <b>Telegram ID:</b> <code>${submission.participant.telegramId.toString()}</code>\n` +
+    `🔑 <b>Referral Code:</b> <code>${code}</code>\n\n` +
+    `🏷️ <b>Title:</b> <b>${title}</b>\n` +
+    `🔗 <b>Demo / Repo:</b> <a href="${projectUrl}">${projectUrl}</a>\n\n` +
+    `💡 <b>Pitch / Description:</b>\n` +
+    `${description}\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `<i>Tap an action below to process immediately:</i>`;
+
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback('🚀 Directly Publish to @NilePixelTech', `sub_pub:${submission.id}`)],
+    [Markup.button.callback('❌ Ignore / Reject', `sub_ign:${submission.id}`)],
+  ]);
+
+  for (const chatId of adminChatIds) {
+    try {
+      if (submission.imageUrl && submission.imageUrl.trim().length > 0) {
+        try {
+          await bot.telegram.sendPhoto(chatId, submission.imageUrl.trim(), {
+            caption: adminCard,
+            parse_mode: 'HTML',
+            reply_markup: keyboard.reply_markup,
+          });
+          continue;
+        } catch (photoErr) {
+          logger.warn(`Failed to send admin photo to ${chatId}, falling back to text:`, {
+            photoErr,
+          });
+        }
+      }
+
+      await bot.telegram.sendMessage(chatId, adminCard, {
+        parse_mode: 'HTML',
+        reply_markup: keyboard.reply_markup,
+        link_preview_options: { is_disabled: false },
+      });
+    } catch (sendErr) {
+      logger.error(`Failed to send showcase review alert to admin chat ${chatId}:`, { sendErr });
+    }
+  }
+}
+

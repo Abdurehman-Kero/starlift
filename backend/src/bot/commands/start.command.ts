@@ -88,6 +88,9 @@ export function registerStartCommand(bot: Telegraf) {
         welcomeText,
         Markup.inlineKeyboard([
           [
+            Markup.button.callback('💡 Submit Showcase Project', 'cmd_submit'),
+          ],
+          [
             Markup.button.callback('🔗 Get Invite Link', 'cmd_mylink'),
             Markup.button.callback('📊 My Stats & Rank', 'cmd_stats'),
           ],

@@ -8,6 +8,7 @@ import { registerStatsCommand } from './commands/stats.command';
 import { registerLeaderboardCommand } from './commands/leaderboard.command';
 import { registerHelpCommand } from './commands/help.command';
 import { registerSubmitCommand } from './commands/submit.command';
+import { registerAdminCommand } from './commands/admin.command';
 import { registerChatMemberHandler } from './handlers/chatMember.handler';
 import { registerReactionHandler } from './handlers/reaction.handler';
 import { syncBotProfileToTelegram } from '../services/botProfile.service';
@@ -44,6 +45,7 @@ registerStatsCommand(bot);
 registerLeaderboardCommand(bot);
 registerHelpCommand(bot);
 registerSubmitCommand(bot);
+registerAdminCommand(bot);
 registerChatMemberHandler(bot);
 registerReactionHandler(bot);
 

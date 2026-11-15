@@ -17,6 +17,7 @@ import toast from 'react-hot-toast';
 
 interface SettingsForm {
   TELEGRAM_CHANNEL_ID: string;
+  ADMIN_CHAT_ID?: string;
   CHALLENGE_START_DATE: string;
   CHALLENGE_END_DATE: string;
   REFERRAL_WEIGHT: string;
@@ -31,6 +32,7 @@ export const SettingsPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState<SettingsForm>({
     TELEGRAM_CHANNEL_ID: '',
+    ADMIN_CHAT_ID: '',
     CHALLENGE_START_DATE: '2026-11-15T00:00:00.000Z',
     CHALLENGE_END_DATE: '2026-11-30T23:59:59.000Z',
     REFERRAL_WEIGHT: '70',
@@ -427,6 +429,43 @@ export const SettingsPage: React.FC = () => {
             <button
               onClick={() => handleSave('TELEGRAM_CHANNEL_ID')}
               disabled={savingKey === 'TELEGRAM_CHANNEL_ID'}
+              className="btn-base btn-primary text-xs shrink-0"
+            >
+              <Save size={13} />
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Section 4b: Admin Telegram Review Chat ID */}
+      <div className="surface-card p-5 sm:p-6 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="max-w-xl">
+            <h2 className="text-sm font-bold text-slate-900 tracking-tight flex items-center gap-2">
+              <ShieldCheck size={16} className="text-blue-600" />
+              Admin Telegram Review Alerts (Direct 1-Click Publish/Ignore)
+            </h2>
+            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+              Telegram chat ID or group ID to receive real-time project submissions with instant 1-click <b>[Publish to Channel]</b> and <b>[Ignore]</b> buttons.
+              <span className="block mt-1 text-slate-600">
+                💡 <b>Tip:</b> You can also link your Telegram account automatically by sending <code className="font-mono bg-slate-100 px-1 py-0.5 rounded text-blue-700">/admin &lt;password&gt;</code> directly to <code className="font-mono bg-slate-100 px-1 py-0.5 rounded">@NilePixelStarLiftBot</code>!
+              </span>
+            </p>
+          </div>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <input
+              type="text"
+              value={formData.ADMIN_CHAT_ID || ''}
+              onChange={(e) =>
+                setFormData({ ...formData, ADMIN_CHAT_ID: e.target.value })
+              }
+              placeholder="e.g. 12345678 or -100..."
+              className="input-base text-xs py-2 sm:w-60 font-mono"
+            />
+            <button
+              onClick={() => handleSave('ADMIN_CHAT_ID')}
+              disabled={savingKey === 'ADMIN_CHAT_ID'}
               className="btn-base btn-primary text-xs shrink-0"
             >
               <Save size={13} />

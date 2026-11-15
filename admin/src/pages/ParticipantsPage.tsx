@@ -76,6 +76,13 @@ interface ParticipantDetail extends ParticipantItem {
   } | null;
 }
 
+const resolveImageUrl = (img?: string | null): string => {
+  if (!img) return '';
+  if (img.startsWith('http://') || img.startsWith('https://')) return img;
+  const apiUrl = import.meta.env.VITE_API_URL || '';
+  return `${apiUrl}/api/submissions/image/${img}`;
+};
+
 export const ParticipantsPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
@@ -736,7 +743,7 @@ export const ParticipantsPage: React.FC = () => {
                             {subImage && (
                               <div className="mt-2 rounded-lg border border-slate-200 overflow-hidden max-h-36 bg-slate-50 flex items-center justify-center p-1">
                                 <img
-                                  src={subImage}
+                                  src={resolveImageUrl(subImage)}
                                   alt="Banner preview"
                                   className="max-h-36 object-contain rounded"
                                 />
@@ -796,7 +803,7 @@ export const ParticipantsPage: React.FC = () => {
                           {detail.projectSubmission.imageUrl && (
                             <div className="rounded-lg overflow-hidden border border-slate-200 max-h-48 bg-slate-50 flex items-center justify-center">
                               <img
-                                src={detail.projectSubmission.imageUrl}
+                                src={resolveImageUrl(detail.projectSubmission.imageUrl)}
                                 alt="Showcase banner"
                                 className="w-full max-h-48 object-cover"
                               />
