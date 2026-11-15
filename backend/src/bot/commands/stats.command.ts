@@ -43,7 +43,7 @@ async function handleStats(ctx: Context) {
 
     const showcaseLine =
       submission?.status === 'published' && submission.channelPostUrl
-        ? `• <b>Showcase Post:</b> <a href="${submission.channelPostUrl}">View on @NilePixelTech</a>\n`
+        ? `• <b>Showcase Post:</b> <a href="${submission.channelPostUrl}">${submission.channelPostUrl}</a>\n`
         : submission
         ? `• <b>Showcase Submission:</b> ${submission.status.toUpperCase()} (Under Review)\n`
         : `• <b>Showcase Submission:</b> Not submitted yet (send /submit)\n`;
@@ -59,9 +59,11 @@ async function handleStats(ctx: Context) {
       `<b>Your Performance:</b>\n` +
       `• <b>Referrals:</b> ${referralCount} members\n` +
       `• <b>Reactions:</b> ${reactionCount} reactions\n` +
-      `• <b>Total Score:</b> ${finalScore} points\n\n` +
+      `• <b>Total Score:</b> ${finalScore} points (70% referrals + 30% reactions)\n\n` +
       `${showcaseLine}\n` +
-      `<b>Your Personal Invite Link:</b>\n${linkText}`;
+      `<b>Your Personal Invite Link:</b>\n${linkText}\n\n` +
+      `<b>Tip to improve your rank:</b>\n` +
+      `Share your personal invite link with friends and communities. When people join through your link and react to your showcase post, your score increases and boosts your rank toward the top 3!`;
 
     const buttons = [
       [

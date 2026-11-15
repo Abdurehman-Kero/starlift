@@ -114,6 +114,7 @@ async function renderStartScreen(ctx: Context) {
       const reactions = Math.max(subReactions, directReactions);
       statusSection =
         `• <b>Status:</b> Live on @NilePixelTech\n` +
+        `• <b>Showcase Post:</b> <a href="${submission.channelPostUrl}">${submission.channelPostUrl}</a>\n` +
         `• <b>Reactions:</b> ${reactions} community reactions\n`;
     } else {
       statusSection =
